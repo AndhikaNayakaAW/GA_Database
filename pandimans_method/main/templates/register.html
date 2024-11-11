@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <h2>Register</h2>
+    <form action="{% url 'register' %}" method="post">
+        {% csrf_token %}
+        <label for="role">Register as:</label>
+        <select id="role" name="role">
+            <option value="user">User</option>
+            <option value="worker">Worker</option>
+        </select>
+        
+        <label for="phone">Phone Number:</label>
+        <input type="text" id="phone" name="phone" required>
+        
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        
+        <label for="bank_name">Bank Name:</label>
+        <select id="bank_name" name="bank_name">
+            <option value="GoPay">GoPay</option>
+            <option value="OVO">OVO</option>
+            <option value="BCA">Virtual Account BCA</option>
+            <option value="BNI">Virtual Account BNI</option>
+            <option value="Mandiri">Virtual Account Mandiri</option>
+        </select>
+        
+        <label for="account_number">Bank Account Number:</label>
+        <input type="text" id="account_number" name="account_number" required>
+
+        <button type="submit">Register</button>
+    </form>
+</div>
+{% endblock %}
