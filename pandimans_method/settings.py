@@ -54,7 +54,7 @@ ROOT_URLCONF = "pandimans_method.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'pandimans_method', 'main', 'templates')],  # Adjusted path to templates
+        'DIRS': [os.path.join(BASE_DIR,'main', 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
