@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Information</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+        }
+
+        .container {
+            width: 600px;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #000;
+            padding: 20px;
+        }
+
+        .section {
+            width: 48%;
+            border: 1px solid #000;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .section h2 {
+            font-size: 16px;
+            margin: 0 0 10px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group label {
+            width: 120px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #000;
+        }
+
+        .form-group .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-group {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            padding: 5px 10px;
+            border: 1px solid #000;
+            background-color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h2>User:</h2>
+            <div class="form-group"><label>Name:</label><span>John Doe</span></div>
+            <div class="form-group"><label>Level:</label><span>Admin</span></div>
+            <div class="form-group"><label>Sex:</label><span>Male</span></div>
+            <div class="form-group"><label>Phone Number:</label><span>+123456789</span></div>
+            <div class="form-group"><label>Birth Date:</label><span>01/01/1990</span></div>
+            <div class="form-group"><label>Address:</label><span>123 Main St</span></div>
+            <div class="form-group"><label>MyPay Balance:</label><span>$500.00</span></div>
+            <div class="button-group">
+                <button type="button">Update</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Update Information:</h2>
+            <form action="#" method="post">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Sex:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="sex" value="L"> L</label>
+                        <label><input type="radio" name="sex" value="P"> P</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number:</label>
+                    <input type="text" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="birth_date">Birth Date:</label>
+                    <input type="text" id="birth_date" name="birth_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address:</label>
+                    <input type="text" id="address" name="address" required>
+                </div>
+                <div class="button-group">
+                    <button type="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

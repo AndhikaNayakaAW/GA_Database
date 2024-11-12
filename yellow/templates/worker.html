@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Information</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+        }
+
+        .container {
+            width: 800px;
+            display: flex;
+            justify-content: space-between;
+            border: 1px solid #000;
+            padding: 20px;
+        }
+
+        .section {
+            width: 48%;
+            border: 1px solid #000;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .section h2 {
+            font-size: 16px;
+            margin: 0 0 10px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group label {
+            width: 130px;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"],
+        .form-group select {
+            width: calc(100% - 140px);
+            padding: 5px;
+            border: 1px solid #000;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-group {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            padding: 5px 10px;
+            border: 1px solid #000;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .image-box {
+            border: 1px solid #000;
+            width: 80px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: auto;
+            font-size: 12px;
+        }
+
+        .job-category {
+            margin-left: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h2>Worker Information</h2>
+            <div class="form-group"><label>Name:</label><span>John Doe</span></div>
+            <div class="form-group"><label>Sex:</label><span>Male</span></div>
+            <div class="form-group"><label>Phone Number:</label><span>+123456789</span></div>
+            <div class="form-group"><label>Birth Date:</label><span>01/01/1990</span></div>
+            <div class="form-group"><label>Address:</label><span>123 Main St</span></div>
+            <div class="form-group"><label>MyPay Balance:</label><span>$500.00</span></div>
+            <div class="form-group"><label>Bank Name:</label><span>ABC Bank</span></div>
+            <div class="form-group"><label>Account Number:</label><span>12345678</span></div>
+            <div class="form-group"><label>NPWP:</label><span>1234567890</span></div>
+            <div class="form-group"><label>Rate:</label><span>$15/hour</span></div>
+            <div class="form-group"><label>Completed Orders Count:</label><span>10</span></div>
+            <div class="form-group"><label>Job Category:</label>
+                <div class="job-category">
+                    <p>1. Job Category 1</p>
+                    <p>2. Job Category 2</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="image-box">Image</div>
+            </div>
+            <div class="button-group">
+                <button type="button">Update</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Register Worker</h2>
+            <form action="#" method="post">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Sex:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="sex" value="F"> F</label>
+                        <label><input type="radio" name="sex" value="M"> M</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number:</label>
+                    <input type="text" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="birth_date">Birth Date:</label>
+                    <input type="text" id="birth_date" name="birth_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Address:</label>
+                    <input type="text" id="address" name="address" required>
+                </div>
+                <div class="form-group">
+                    <label for="bank_name">Bank Name:</label>
+                    <select id="bank_name" name="bank_name">
+                        <option value="ABC Bank">ABC Bank</option>
+                        <option value="XYZ Bank">XYZ Bank</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="account_number">Account Number:</label>
+                    <input type="text" id="account_number" name="account_number" required>
+                </div>
+                <div class="form-group">
+                    <label for="npwp">NPWP:</label>
+                    <input type="text" id="npwp" name="npwp" required>
+                </div>
+                <div class="form-group">
+                    <label for="image_url">Image URL:</label>
+                    <input type="text" id="image_url" name="image_url">
+                </div>
+                <div class="button-group">
+                    <button type="submit">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
