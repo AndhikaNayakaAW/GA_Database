@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Job Filter & Orders</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Centering the container */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid #000;
+            padding: 20px;
+            width: 600px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown, .search {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .dropdown select, .search button {
+            padding: 10px;
+            border: 1px solid #000;
+            cursor: pointer;
+            width: 150px;
+        }
+
+        .order-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #000;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .order-info {
+            display: flex;
+            gap: 15px;
+        }
+
+        .order-info div {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .accept-btn {
+            padding: 10px;
+            border: 1px solid #000;
+            cursor: pointer;
+            background-color: #e0e0e0;
+        }
+
+        .accept-btn:hover {
+            background-color: #d0d0d0;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        select, button {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Filter Section -->
+    <div class="dropdown">
+        <select id="category" onchange="updateSubcategories()">
+            <option value="">Category</option>
+            <option value="home_cleaning">Home Cleaning</option>
+            <option value="massage">Massage</option>
+        </select>
+        <select id="subcategory" disabled>
+            <option value="">Subcategory</option>
+        </select>
+        <button onclick="search()">Search</button>
+    </div>
+
+    <!-- Order List Section -->
+    <div class="order-card">
+        <div class="order-details">
+            <div class="order-info">
+                <div>Subcategory Name</div>
+                <div>| User's name</div>
+            </div>
+            <div class="order-info">
+                <div>Order Date</div>
+                <div>Working Date</div>
+                <div>Session</div>
+            </div>
+        </div>
+        <div>
+            <div>Total Amount</div>
+            <button class="accept-btn" onclick="acceptOrder(this)">Accept Order</button>
+        </div>
+    </div>
+
+    <div class="order-card">
+        <div class="order-details">
+            <div class="order-info">
+                <div>Subcategory Name</div>
+                <div>| User's name</div>
+            </div>
+            <div class="order-info">
+                <div>Order Date</div>
+                <div>Working Date</div>
+                <div>Session</div>
+            </div>
+        </div>
+        <div>
+            <div>Total Amount</div>
+            <button class="accept-btn" onclick="acceptOrder(this)">Accept Order</button>
+        </div>
+    </div>
+
+    <div class="order-card">
+        <div class="order-details">
+            <div class="order-info">
+                <div>Subcategory Name</div>
+                <div>| User's name</div>
+            </div>
+            <div class="order-info">
+                <div>Order Date</div>
+                <div>Working Date</div>
+                <div>Session</div>
+            </div>
+        </div>
+        <div>
+            <div>Total Amount</div>
+            <button class="accept-btn" onclick="acceptOrder(this)">Accept Order</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateSubcategories() {
+        const category = document.getElementById('category').value;
+        const subcategoryDropdown = document.getElementById('subcategory');
+        subcategoryDropdown.disabled = category === '';
+
+        // Update subcategory options based on selected category (dummy example)
+        subcategoryDropdown.innerHTML = '<option value="">Subcategory</option>';
+        if (category === 'home_cleaning') {
+            subcategoryDropdown.innerHTML += '<option value="daily_cleaning">Daily Cleaning</option>';
+            subcategoryDropdown.innerHTML += '<option value="kitchen_cleaning">Kitchen Cleaning</option>';
+        } else if (category === 'massage') {
+            subcategoryDropdown.innerHTML += '<option value="therapeutic">Therapeutic</option>';
+            subcategoryDropdown.innerHTML += '<option value="relaxation">Relaxation</option>';
+        }
+    }
+
+    function search() {
+        alert("Search function triggered.");
+    }
+
+    function acceptOrder(button) {
+        // Simulate order acceptance logic
+        button.innerText = "Order Accepted";
+        button.disabled = true;
+        alert("Order status updated and added to worker's active jobs.");
+    }
+</script>
+
+</body>
+</html>

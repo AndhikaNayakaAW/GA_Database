@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyPay</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            border: 2px solid #000;
+            padding: 20px;
+            width: 600px; /* Increased width for more space */
+            box-sizing: border-box;
+            background-color: #fff;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px; /* Space between balance and transact button */
+        }
+        .phone-balance {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #000;
+            border-radius: 12px;
+            box-sizing: border-box;
+        }
+        .phone-balance p {
+            margin: 0;
+            flex: 1;
+            text-align: center;
+        }
+        .transact-button {
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: center;
+            width: 100px;
+            border-radius: 12px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+        }
+        .transaction-history {
+            border: 1px solid #000;
+            padding: 10px;
+            margin-top: 20px;
+            text-align: left; /* Aligns text to the left */
+        }
+        .transaction-history h3 {
+            margin: 0 0 10px;
+            font-weight: bold;
+        }
+        .transaction-item {
+            border: 1px solid #000;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .transaction-item p {
+            margin: 0;
+            flex: 1;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: left;">MyPay</h1>
+        <div class="header">
+            <div class="phone-balance">
+                <p>Phone Number</p>
+                <p>Balance</p>
+            </div>
+            <div class="transact-button">
+                <p>Transact</p>
+            </div>
+        </div>
+        <div class="transaction-history">
+            <h3>Transaction History</h3>
+            <div class="transaction-item">
+                <p>+- Amount</p>
+                <p>Date</p>
+                <p>Transaction Category</p>
+            </div>
+            <div class="transaction-item">
+                <p>+- Amount</p>
+                <p>Date</p>
+                <p>Transaction Category</p>
+            </div>
+            <div class="transaction-item">
+                <p>+- Amount</p>
+                <p>Date</p>
+                <p>Transaction Category</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

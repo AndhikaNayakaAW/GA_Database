@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Job Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            border: 1px solid #333;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .header, .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .header {
+            flex-wrap: wrap;
+        }
+        .service-item {
+            flex-direction: column;
+            border: 1px solid #333;
+            margin-top: 10px;
+            padding: 15px;
+        }
+        .search-bar {
+            display: flex;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .search-bar input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        .search-bar select, .search-bar button {
+            padding: 8px;
+        }
+        .details {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .details div {
+            display: flex;
+            flex-direction: column;
+        }
+        .status-update {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 10px;
+        }
+        .status-update button {
+            padding: 8px 12px;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="search-bar">
+        <input type="text" placeholder="Service Name">
+        <select>
+            <option>Service Status</option>
+            <option>Waiting for Worker to Depart</option>
+            <option>Worker Arrived at Location</option>
+            <option>Service in Progress</option>
+            <option>Order Completed</option>
+            <option>Order Canceled</option>
+        </select>
+        <button>Search</button>
+    </div>
+
+    <!-- Service Item 1 -->
+    <div class="service-item">
+        <div class="details">
+            <div>
+                <strong>Service Subcategory Name</strong>
+                <p>Order Date</p>
+            </div>
+            <div>
+                <strong>User's Name</strong>
+                <p>Working Date</p>
+            </div>
+            <div>
+                <strong>Session</strong>
+                <p>Total Amount</p>
+            </div>
+            <div class="status-update">
+                <strong>Service Status</strong>
+                <button>Button Update Status</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Item 2 -->
+    <div class="service-item">
+        <div class="details">
+            <div>
+                <strong>Service Subcategory Name</strong>
+                <p>Order Date</p>
+            </div>
+            <div>
+                <strong>User's Name</strong>
+                <p>Working Date</p>
+            </div>
+            <div>
+                <strong>Session</strong>
+                <p>Total Amount</p>
+            </div>
+            <div class="status-update">
+                <strong>Service Status</strong>
+                <button>Button Update Status</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Item 3 -->
+    <div class="service-item">
+        <div class="details">
+            <div>
+                <strong>Service Subcategory Name</strong>
+                <p>Order Date</p>
+            </div>
+            <div>
+                <strong>User's Name</strong>
+                <p>Working Date</p>
+            </div>
+            <div>
+                <strong>Session</strong>
+                <p>Total Amount</p>
+            </div>
+            <div class="status-update">
+                <strong>Service Status</strong>
+                <button>Button Update Status</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

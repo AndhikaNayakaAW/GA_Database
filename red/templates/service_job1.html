@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Job Filter</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Centering the container */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid #000;
+            padding: 20px;
+            width: 400px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .dropdown, .search {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .dropdown select, .dropdown div, .search button {
+            padding: 10px;
+            border: 1px solid #000;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .state-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        select, button {
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="state-title">State 1</div>
+    <div class="dropdown">
+        <label>Kategori</label>
+        <select id="category" onchange="updateSubcategories()">
+            <option value="">Select Category</option>
+            <option value="home_cleaning">Home Cleaning</option>
+            <option value="massage">Massage</option>
+        </select>
+        <div id="subcategory-home-cleaning" class="hidden">
+            <div>Setrika</div>
+            <div>Daily Cleaning</div>
+            <div>Pembersihan Dapur</div>
+        </div>
+        <div id="subcategory-massage" class="hidden">
+            <div>Therapeutic</div>
+            <div>Relaxation</div>
+        </div>
+    </div>
+    <div class="search">
+        <label>Subkategori</label>
+        <select id="subcategory" disabled>
+            <option value="">Select Subcategory</option>
+        </select>
+        <button onclick="search()">Search</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="state-title">State 2</div>
+    <div class="dropdown">
+        <label>Kategori</label>
+        <select id="category-selected" onchange="updateSelectedSubcategories()">
+            <option value="home_cleaning">Home Cleaning</option>
+        </select>
+        <div id="subcategory-options">
+            <div>Setrika</div>
+            <div>Daily Cleaning</div>
+            <div>Pembersihan Dapur</div>
+        </div>
+    </div>
+    <div class="search">
+        <label>Subkategori</label>
+        <select id="subcategory-filtered">
+            <option value="setrika">Setrika</option>
+            <option value="daily_cleaning">Daily Cleaning</option>
+            <option value="pembersihan_dapur">Pembersihan Dapur</option>
+        </select>
+        <button onclick="search()">Search</button>
+    </div>
+</div>
+
+<script>
+    function updateSubcategories() {
+        const category = document.getElementById('category').value;
+        document.getElementById('subcategory').disabled = category === '';
+        const homeCleaningSubcategories = document.getElementById('subcategory-home-cleaning');
+        const massageSubcategories = document.getElementById('subcategory-massage');
+
+        homeCleaningSubcategories.classList.add('hidden');
+        massageSubcategories.classList.add('hidden');
+
+        if (category === 'home_cleaning') {
+            homeCleaningSubcategories.classList.remove('hidden');
+        } else if (category === 'massage') {
+            massageSubcategories.classList.remove('hidden');
+        }
+    }
+
+    function updateSelectedSubcategories() {
+        const categorySelected = document.getElementById('category-selected').value;
+        if (categorySelected === 'home_cleaning') {
+            document.getElementById('subcategory-options').style.display = 'block';
+        }
+    }
+
+    function search() {
+        alert("Search function triggered.");
+    }
+</script>
+
+</body>
+</html>
