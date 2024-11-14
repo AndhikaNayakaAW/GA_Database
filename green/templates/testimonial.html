@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Page with Testimonials</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { border: 2px solid #000; padding: 10px; margin-bottom: 20px; }
+        .subcategory, .category { display: inline-block; width: 48%; padding: 10px; border: 1px solid #000; margin-bottom: 10px; }
+        .description { padding: 20px; border: 1px solid #000; margin-bottom: 10px; }
+        .service-session-option, .workers, .testimonials { padding: 10px; border: 1px solid #000; margin-bottom: 10px; }
+        .service-session { display: flex; justify-content: space-between; border: 1px solid #000; padding: 10px; margin-bottom: 5px; }
+        .worker { display: inline-block; width: 23%; padding: 10px; border: 1px solid #000; text-align: center; }
+        .testimonial { border: 2px solid #000; padding: 10px; margin-top: 10px; }
+        .search-container { display: flex; gap: 10px; margin-bottom: 10px; }
+        .order-listing { border: 1px solid #000; padding: 10px; margin-bottom: 5px; }
+        .create-testimonial { color: red; cursor: pointer; text-align: center; }
+        .form-testimonial { display: none; border: 2px solid #000; padding: 10px; width: 300px; margin-top: 20px; }
+        .form-testimonial select, .form-testimonial textarea, .form-testimonial button { width: 100%; margin-top: 5px; padding: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="subcategory">Subcategory Name</div>
+        <div class="category">Category</div>
+
+        <div class="description">
+            <p>Description</p>
+        </div>
+
+        <div class="service-session-option">
+            <p>Service Session Option</p>
+            <div class="service-session">
+                <span>Service Session</span>
+                <span>Price</span>
+                <button>Book Service</button>
+            </div>
+            <div class="service-session">
+                <span>Service Session</span>
+                <span>Price</span>
+                <button>Book Service</button>
+            </div>
+        </div>
+
+        <div class="workers">
+            <p>Workers</p>
+            <div class="worker">Worker Name 1</div>
+            <div class="worker">Worker Name 2</div>
+            <div class="worker">Worker Name 3</div>
+            <div class="worker">Worker Name 4</div>
+        </div>
+
+        <div class="testimonials" id="testimonials-section">
+            <p>Testimonials</p>
+            <div class="testimonial" id="testimonial-template" style="display: none;">
+                <p><strong>Users Name</strong> <span style="float: right;">Date</span></p>
+                <p>Text</p>
+                <p>Worker Name <span style="float: right;">Rate</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="search-container">
+            <select>
+                <option>Subcategory</option>
+            </select>
+            <select>
+                <option>Order Status</option>
+            </select>
+            <button>Search</button>
+        </div>
+
+        <div class="order-listing">
+            <div>
+                <span>Subcategory</span> |
+                <span>Service Session</span> |
+                <span>Price</span> |
+                <span>Worker Name</span> |
+                <span>Status: Order Completed</span>
+                <span class="create-testimonial" onclick="showTestimonialForm()">Create Testimonial</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-testimonial" id="testimonial-form">
+        <form onsubmit="addTestimonial(event)">
+            <label for="rating">Rating:</label>
+            <select id="rating" required>
+                <option value="">Select Rating</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+            <label for="comment">Comment:</label>
+            <textarea id="comment" rows="4" placeholder="Enter your feedback" required></textarea>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        function showTestimonialForm() {
+            document.getElementById("testimonial-form").style.display = "block";
+        }
+
+        function addTestimonial(event) {
+            event.preventDefault();
+
+            // Retrieve the form data
+            const rating = document.getElementById("rating").value;
+            const comment = document.getElementById("comment").value;
+
+            // Clear form and hide it
+            document.getElementById("testimonial-form").style.display = "none";
+            document.getElementById("rating").value = "";
+            document.getElementById("comment").value = "";
+
+            // Create a new testimonial element
+            const testimonialSection = document.getElementById("testimonials-section");
+            const newTestimonial = document.createElement("div");
+            newTestimonial.classList.add("testimonial");
+
+            const date = new Date().toLocaleDateString();
+            newTestimonial.innerHTML = `
+                <p><strong>Anonymous User</strong> <span style="float: right;">${date}</span></p>
+                <p>${comment}</p>
+                <p>Worker Name <span style="float: right;">Rating: ${rating}</span></p>
+            `;
+
+            // Append the new testimonial
+            testimonialSection.appendChild(newTestimonial);
+        }
+    </script>
+
+</body>
+</html>
