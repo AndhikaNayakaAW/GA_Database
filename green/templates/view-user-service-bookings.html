@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View User Service Bookings</title>
+  <style>
+    /* Basic Styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .filter-section {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .filter-section select,
+    .filter-section input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .filter-section button {
+      padding: 8px 15px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .filter-section button:hover {
+      background-color: #0056b3;
+    }
+
+    .order-list {
+      margin-top: 20px;
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background-color: #f9f9f9;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    .order-item span {
+      flex: 1;
+      text-align: center;
+    }
+
+    .order-item .action-button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .cancel-btn {
+      background-color: #FF6347;
+      color: #fff;
+    }
+
+    .cancel-btn:hover {
+      background-color: #FF4500;
+    }
+
+    .testimonial-btn {
+      background-color: #4CAF50;
+      color: #fff;
+    }
+
+    .testimonial-btn:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>View User Service Bookings</h1>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <select id="subcategoryFilter">
+        <option value="">Select Subcategory</option>
+        <option value="cleaning">Cleaning</option>
+        <option value="plumbing">Plumbing</option>
+        <option value="electrician">Electrician</option>
+      </select>
+
+      <select id="orderStatusFilter">
+        <option value="">Select Order Status</option>
+        <option value="waiting">Waiting for Payment</option>
+        <option value="searching">Searching for Workers</option>
+        <option value="completed">Order Completed</option>
+      </select>
+
+      <input type="text" id="searchInput" placeholder="Search by Worker Name">
+
+      <button onclick="filterOrders()">Search</button>
+    </div>
+
+    <!-- Order List -->
+    <div class="order-list">
+      <!-- Example Orders -->
+      <div class="order-item">
+        <span>Cleaning</span>
+        <span>Bathroom Cleaning</span>
+        <span>$50</span>
+        <span>John Doe</span>
+        <span>Waiting for Payment</span>
+        <button class="action-button cancel-btn" onclick="cancelOrder(101)">Cancel</button>
+      </div>
+      <div class="order-item">
+        <span>Plumbing</span>
+        <span>Pipe Fixing</span>
+        <span>$80</span>
+        <span>Jane Smith</span>
+        <span>Order Completed</span>
+        <button class="action-button testimonial-btn" onclick="createTestimonial(102)">Create Testimonial</button>
+      </div>
+      <div class="order-item">
+        <span>Electrician</span>
+        <span>Light Installation</span>
+        <span>$100</span>
+        <span>Mark Brown</span>
+        <span>Searching for Workers</span>
+        <button class="action-button cancel-btn" onclick="cancelOrder(103)">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Function to handle cancel order
+    function cancelOrder(orderId) {
+      const confirmCancel = confirm(`Are you sure you want to cancel order #${orderId}?`);
+      if (confirmCancel) {
+        alert(`Order #${orderId} has been cancelled.`);
+        // Implement backend logic here to cancel the order
+      }
+    }
+
+    // Function to create a testimonial
+    function createTestimonial(orderId) {
+      alert(`Redirecting to create testimonial for order #${orderId}.`);
+      // Redirect to a testimonial page
+      window.location.href = `create-testimonial.html?orderId=${orderId}`;
+    }
+
+    // Function to filter orders
+    function filterOrders() {
+      const subcategory = document.getElementById('subcategoryFilter').value;
+      const status = document.getElementById('orderStatusFilter').value;
+      const search = document.getElementById('searchInput').value.toLowerCase();
+
+      // Logic to filter orders dynamically (mock example)
+      alert(`Filtering orders by:\nSubcategory: ${subcategory}\nStatus: ${status}\nSearch: ${search}`);
+      // Implement backend filtering logic or dynamic display updates
+    }
+  </script>
+</body>
+</html>

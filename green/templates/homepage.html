@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Homepage</title>
+  <style>
+    /* CSS Styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      padding: 20px;
+      background-color: #fff;
+    }
+
+    .filter-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .filter-section select,
+    .filter-section input,
+    .filter-section button {
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .categories {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .category {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+
+    .category-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      background-color: #ddd;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .subcategory {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fff;
+      margin: 5px 0;
+      cursor: pointer;
+    }
+
+    .subcategory:hover {
+      background-color: #e9e9e9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <label for="categoryFilter">Category:</label>
+      <select id="categoryFilter">
+        <option value="">All Categories</option>
+        <!-- Dynamic options for categories go here -->
+      </select>
+      
+      <input type="text" id="subcategorySearch" placeholder="Subcategory Name">
+      <button id="searchButton">Search</button>
+    </div>
+    
+    <!-- Service Categories -->
+    <div class="categories">
+      <!-- Sample category and subcategories structure -->
+      <div class="category">
+        <div class="category-title">Service Category 1</div>
+        <div class="subcategory">Subcategory 1</div>
+        <div class="subcategory">Subcategory 2</div>
+        <div class="subcategory">Subcategory 3</div>
+      </div>
+      
+      <div class="category">
+        <div class="category-title">Service Category 2</div>
+        <div class="subcategory">Subcategory 1</div>
+        <div class="subcategory">Subcategory 2</div>
+        <div class="subcategory">Subcategory 3</div>
+      </div>
+      
+      <div class="category">
+        <div class="category-title">Service Category 3</div>
+        <div class="subcategory">Subcategory 1</div>
+        <div class="subcategory">Subcategory 2</div>
+        <div class="subcategory">Subcategory 3</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // JavaScript for dynamic functionalities (placeholder for actual functions)
+    function searchCategories() {
+      // Code for filtering categories
+    }
+
+    document.getElementById('searchButton').onclick = searchCategories;
+  </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Service Session User Page</title>
+  <style>
+    /* Basic Styling */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      border: 1px solid #ccc;
+      padding: 20px;
+      background-color: #fff;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .header div {
+      font-weight: bold;
+      font-size: 18px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+      text-align: center;
+      flex: 1;
+      margin: 0 5px;
+    }
+
+    .description {
+      margin: 15px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+      text-align: center;
+    }
+
+    /* Service Session Section */
+    .session-section {
+      margin-top: 20px;
+    }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background-color: #f0f0f0;
+      margin-bottom: 10px;
+    }
+
+    .session-item span {
+      flex: 1;
+      text-align: center;
+    }
+
+    .session-item button {
+      padding: 5px 15px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .session-item button:hover {
+      background-color: #45a049;
+    }
+
+    /* Workers Section */
+    .worker-section {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f9f9f9;
+    }
+
+    .worker-box {
+      width: 100px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #ddd;
+      background-color: #fff;
+      border-radius: 4px;
+    }
+
+    .worker-box a {
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .worker-box a:hover {
+      color: #007BFF;
+    }
+
+    /* Testimonials Section */
+    .testimonial-section {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+    }
+
+    .testimonial-item {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: #fff;
+    }
+
+    .testimonial-item .header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #666;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-content label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    .modal-content input,
+    .modal-content select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .modal-content button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .modal-content button:hover {
+      background-color: #45a049;
+    }
+
+    .close-button {
+      background-color: #ccc;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <div>Subcategory Name</div>
+      <div>Category</div>
+    </div>
+
+    <!-- Description Section -->
+    <div class="description">
+      This is the description of the subcategory service. It provides details on the services offered.
+    </div>
+
+    <!-- Service Session Options -->
+    <section class="session-section">
+      <h2>Service Session Options</h2>
+      <div class="session-item">
+        <span>Service Session 1</span>
+        <span>$50</span>
+        <button onclick="openBookingModal(50)">Book Service</button>
+      </div>
+      <div class="session-item">
+        <span>Service Session 2</span>
+        <span>$80</span>
+        <button onclick="openBookingModal(80)">Book Service</button>
+      </div>
+    </section>
+
+    <!-- Workers Section -->
+    <section class="worker-section">
+      <div class="worker-box">
+        <span>Worker Name 1</span>
+        <a href="worker-profile.html?id=1">View Profile</a>
+      </div>
+      <div class="worker-box">
+        <span>Worker Name 2</span>
+        <a href="worker-profile.html?id=2">View Profile</a>
+      </div>
+      <div class="worker-box">
+        <span>Worker Name 3</span>
+        <a href="worker-profile.html?id=3">View Profile</a>
+      </div>
+      <div class="worker-box">
+        <span>Worker Name 4</span>
+        <a href="worker-profile.html?id=4">View Profile</a>
+      </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonial-section">
+      <h2>Testimonials</h2>
+      <div class="testimonial-item">
+        <div class="header">
+          <span>User Name</span>
+          <span>Date</span>
+        </div>
+        <p>Feedback text goes here.</p>
+        <div class="header">
+          <span>Worker Name</span>
+          <span>Rating: 5/5</span>
+        </div>
+      </div>
+      <div class="testimonial-item">
+        <div class="header">
+          <span>User Name</span>
+          <span>Date</span>
+        </div>
+        <p>Another feedback text goes here.</p>
+        <div class="header">
+          <span>Worker Name</span>
+          <span>Rating: 4/5</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Booking Modal -->
+  <div id="bookingModal" class="modal">
+    <div class="modal-content">
+      <h3>Book Service</h3>
+      <form id="bookingForm" onsubmit="submitBooking(event)">
+        <label for="orderDate">Order Date:</label>
+        <input type="date" id="orderDate" value="2024-11-16" readonly>
+
+        <label for="discountCode">Discount Code:</label>
+        <input type="text" id="discountCode" placeholder="Enter discount code">
+
+        <label for="totalPayment">Total Payment:</label>
+        <input type="text" id="totalPayment" value="" readonly>
+
+        <label for="paymentMethod">Payment Method:</label>
+        <select id="paymentMethod" required>
+          <option value="">Select Payment Method</option>
+          <option value="credit_card">Credit Card</option>
+          <option value="paypal">PayPal</option>
+        </select>
+
+        <button type="submit">Confirm Booking</button>
+        <button type="button" class="close-button" onclick="closeBookingModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openBookingModal(sessionPrice = 0) {
+      document.getElementById('bookingModal').style.display = 'flex';
+      document.getElementById('totalPayment').value = `$${sessionPrice}`;
+    }
+
+    function closeBookingModal() {
+      document.getElementById('bookingModal').style.display = 'none';
+    }
+
+    function submitBooking(event) {
+      event.preventDefault();
+      alert('Booking confirmed!');
+      window.location.href = "view-user-service-bookings.html";
+    }
+  </script>
+</body>
+</html>
