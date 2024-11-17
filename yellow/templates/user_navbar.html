@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navbar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #333;
+      padding: 10px 20px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+    }
+
+    .navbar a:hover {
+      text-decoration: underline;
+    }
+
+    .navbar .nav-links {
+      display: flex;
+      align-items: center;
+    }
+
+    .navbar .role-name {
+      color: white;
+      margin-right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="role-name">
+      Role: User <br>
+      Name: John Doe 
+    </div>
+    <div class="nav-links">
+        <a href="green/homepage.html">Homepage</a>
+        <a href="red/mypay.html">MyPay</a>
+        <a href="myorder.html">My Order (View Service Booking)</a>
+        <a href="blue/voucherpurchase.html">Discount</a>
+        <a href="user-profile.html">Profile</a>
+        <a href="logout.html">Logout</a>
+      </div>
+  </div>
+</body>
+</html>
