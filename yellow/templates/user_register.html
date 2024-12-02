@@ -59,47 +59,24 @@
             cursor: pointer;
             border-radius: 3px;
         }
-    </style>
-    <script>
-        
-        const existingUsers = [
-            { phone: '08123456789' },
-            { phone: '08198765432' }
-        ];
-
-        function validateForm(event) {
-            event.preventDefault();
-
-            const name = document.getElementById('name').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const birthdate = document.getElementById('birthdate').value.trim();
-            const address = document.getElementById('address').value.trim();
-            const sexFemale = document.getElementById('female').checked;
-            const sexMale = document.getElementById('male').checked;
-
-            
-            if (!name || !password || !phone || !birthdate || !address || (!sexFemale && !sexMale)) {
-                alert('All fields in the form must be filled out before submission.');
-                return;
-            }
-
-            
-            const phoneExists = existingUsers.some(user => user.phone === phone);
-            if (phoneExists) {
-                alert('The phone number is already registered. Redirecting to login page.');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            alert('Registration successful!');
-            
+        .message {
+            color: red;
+            text-align: center;
+            margin-bottom: 10px;
         }
-    </script>
+    </style>
 </head>
 <body>
     <div class="form-container">
-        <form onsubmit="validateForm(event)">
+        {% if messages %}
+            <div class="message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <form method="POST">
+            {% csrf_token %}
             <div class="form-group">
                 <label for="name">Name :</label>
                 <input type="text" id="name" name="name" required>

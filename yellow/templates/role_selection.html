@@ -32,14 +32,26 @@
             margin: 10px 0;
             font-size: 16px;
             cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Select Your Role</h2>
-        <button onclick="location.href='user_register.html'">User</button>
-        <button onclick="location.href='worker_register.html'">Worker</button>
+        <a href="{% url 'yellow:user_register' %}">
+            <button>User</button>
+        </a>
+        <a href="{% url 'yellow:worker_register' %}">
+            <button>Worker</button>
+        </a>
     </div>
 </body>
 </html>

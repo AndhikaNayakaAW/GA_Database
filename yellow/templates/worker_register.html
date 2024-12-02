@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Form</title>
+    <title>Worker Registration</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,14 +21,13 @@
             background-color: #fff;
         }
         .form-group {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         label {
             display: inline-block;
-            width: 110px;
-            text-align: left;
-            font-size: 14px;
-            margin-right: 5px;
+            width: 100px;
+            text-align: right;
+            margin-right: 10px;
         }
         input[type="text"],
         input[type="password"],
@@ -38,77 +37,40 @@
         select {
             width: calc(100% - 120px);
             padding: 5px;
-            border: 1px solid #000;
-            box-sizing: border-box;
-            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
         }
         .radio-group {
             display: inline-block;
-            margin-left: 5px;
-            font-size: 14px;
+            margin-right: 5px;
         }
         .radio-group label {
-            margin-right: 10px;
+            width: auto;
+            margin: 0 5px 0 0;
+        }
+        .radio-group input[type="radio"] {
+            margin: 0 3px;
         }
         .form-button {
             text-align: center;
-            margin-top: 10px;
         }
         .register-button {
-            padding: 5px 20px;
+            padding: 8px 16px;
             border: 1px solid #000;
             background-color: #fff;
             cursor: pointer;
+            border-radius: 3px;
+        }
+        .message {
+            color: red;
             font-size: 14px;
         }
     </style>
-    <script>
-      
-        const existingUsers = [
-            { phone: '08123456789', bankName: 'GoPay', accountNumber: '123456', npwp: '987654321' },
-            { phone: '08198765432', bankName: 'OVO', accountNumber: '654321', npwp: '123456789' }
-        ];
-
-        function validateForm(event) {
-            event.preventDefault();
-            
-            const phone = document.getElementById('phone').value;
-            const bankName = document.getElementById('bank').value;
-            const accountNumber = document.getElementById('account').value;
-            const npwp = document.getElementById('npwp').value;
-            
-            
-            const phoneExists = existingUsers.some(user => user.phone === phone);
-            if (phoneExists) {
-                alert('Phone number must be unique. Redirecting to login page.');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            
-            const bankAccountExists = existingUsers.some(user => user.bankName === bankName && user.accountNumber === accountNumber);
-            if (bankAccountExists) {
-                alert('Bank name and account number combination must be unique. Redirecting to login page.');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            
-            const npwpExists = existingUsers.some(user => user.npwp === npwp);
-            if (npwpExists) {
-                alert('NPWP must be unique. Redirecting to login page.');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            alert('Registration successful!');
-            
-        }
-    </script>
 </head>
 <body>
     <div class="form-container">
-        <form onsubmit="validateForm(event)">
+        <form method="POST">
+            {% csrf_token %}
             <div class="form-group">
                 <label for="name">Name :</label>
                 <input type="text" id="name" name="name" required>
@@ -120,9 +82,9 @@
             <div class="form-group">
                 <label>Sex :</label>
                 <div class="radio-group">
-                    <input type="radio" id="female" name="sex" value="F">
+                    <input type="radio" id="female" name="sex" value="F" required>
                     <label for="female">F</label>
-                    <input type="radio" id="male" name="sex" value="M">
+                    <input type="radio" id="male" name="sex" value="M" required>
                     <label for="male">M</label>
                 </div>
             </div>
@@ -163,6 +125,13 @@
             </div>
             <div class="form-button">
                 <button type="submit" class="register-button">Register</button>
+            </div>
+            <div class="message">
+                {% if messages %}
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
             </div>
         </form>
     </div>

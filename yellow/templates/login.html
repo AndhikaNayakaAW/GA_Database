@@ -32,14 +32,31 @@
             margin: 10px 0;
             font-size: 16px;
             cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        a {
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>SIJARTA By Pandimans Method</h1>
-        <button onclick="location.href='iflogin.html'">Login</button>
-        <button onclick="location.href='role_selection.html'">Register</button>
+        <a href="{% url 'yellow:iflogin' %}">
+            <button>Login</button>
+        </a>
+    </a>
+    <a href="{% url 'yellow:role_selection' %}">
+        <button>Register</button>
+    </a>
     </div>
 </body>
 </html>
