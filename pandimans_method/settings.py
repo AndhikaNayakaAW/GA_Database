@@ -38,6 +38,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "yellow",
+    "green",
+    "red",
+    "blue",
 ]
 
 MIDDLEWARE = [
@@ -76,11 +79,11 @@ WSGI_APPLICATION = "pandimans_method.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-        'USER': 'username_kita',      
-        'PASSWORD': 'password kita',  
-        'HOST': '127.0.0.1',          
+        "ENGINE": 'django.db.backends.postgresql',
+        "NAME": "railway",
+        'USER': 'postgres',      
+        'PASSWORD': 'lPpjmeUGynUPMacwnsuftvRGeGSidxpR',  
+        'HOST': 'postgres.railway.internal',          
         'PORT': '5432',               
     }
 }
