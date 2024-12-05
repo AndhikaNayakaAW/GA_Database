@@ -1,9 +1,9 @@
+<!-- red/templates/service_job2.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Job Filter & Orders</title>
+    <title>Service Job Filter & Orders - State 2</title>
     <style>
         /* Basic Reset */
         * {
@@ -26,7 +26,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            border: 1px solid #000;
+            border: 2px solid #000;
             padding: 20px;
             width: 600px;
             background-color: #fff;
@@ -46,6 +46,7 @@
             border: 1px solid #000;
             cursor: pointer;
             width: 150px;
+            font-size: 16px;
         }
 
         .order-card {
@@ -55,12 +56,14 @@
             border: 1px solid #000;
             padding: 15px;
             margin-bottom: 10px;
+            background-color: #f9f9f9;
         }
 
         .order-details {
             display: flex;
             flex-direction: column;
             gap: 5px;
+            width: 70%;
         }
 
         .order-info {
@@ -78,91 +81,70 @@
             border: 1px solid #000;
             cursor: pointer;
             background-color: #e0e0e0;
+            font-size: 14px;
         }
 
         .accept-btn:hover {
             background-color: #d0d0d0;
         }
 
-        label {
-            font-weight: bold;
-        }
-
-        select, button {
-            font-size: 16px;
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .order-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-details {
+                width: 100%;
+            }
+            .accept-btn {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Filter Section -->
     <div class="dropdown">
-        <select id="category" onchange="updateSubcategories()">
+        <select id="category" name="category" onchange="updateSubcategories()">
             <option value="">Category</option>
             <option value="home_cleaning">Home Cleaning</option>
             <option value="massage">Massage</option>
         </select>
-        <select id="subcategory" disabled>
+        <select id="subcategory" name="subcategory" disabled>
             <option value="">Subcategory</option>
         </select>
         <button onclick="search()">Search</button>
     </div>
 
     <!-- Order List Section -->
-    <div class="order-card">
-        <div class="order-details">
-            <div class="order-info">
-                <div>Subcategory Name</div>
-                <div>| User's name</div>
+    {% if service_orders %}
+        {% for order in service_orders %}
+        <div class="order-card">
+            <div class="order-details">
+                <div class="order-info">
+                    <div>{{ order.service_subcategory }}</div>
+                    <div>| {{ order.user_name }}</div>
+                </div>
+                <div class="order-info">
+                    <div>Order Date: {{ order.order_date|date:"Y-m-d" }}</div>
+                    <div>Working Date: {{ order.working_date|date:"Y-m-d" }}</div>
+                    <div>Session: {{ order.session }}</div>
+                </div>
+                <div class="order-info">
+                    <div>Total Amount: Rp {{ order.total_amount|floatformat:2|intcomma }}</div>
+                </div>
             </div>
-            <div class="order-info">
-                <div>Order Date</div>
-                <div>Working Date</div>
-                <div>Session</div>
-            </div>
-        </div>
-        <div>
-            <div>Total Amount</div>
-            <button class="accept-btn" onclick="acceptOrder(this)">Accept Order</button>
-        </div>
-    </div>
-
-    <div class="order-card">
-        <div class="order-details">
-            <div class="order-info">
-                <div>Subcategory Name</div>
-                <div>| User's name</div>
-            </div>
-            <div class="order-info">
-                <div>Order Date</div>
-                <div>Working Date</div>
-                <div>Session</div>
+            <div>
+                <button class="accept-btn" onclick="acceptOrder('{{ order.order_id }}')">Accept Order</button>
             </div>
         </div>
-        <div>
-            <div>Total Amount</div>
-            <button class="accept-btn" onclick="acceptOrder(this)">Accept Order</button>
-        </div>
-    </div>
-
-    <div class="order-card">
-        <div class="order-details">
-            <div class="order-info">
-                <div>Subcategory Name</div>
-                <div>| User's name</div>
-            </div>
-            <div class="order-info">
-                <div>Order Date</div>
-                <div>Working Date</div>
-                <div>Session</div>
-            </div>
-        </div>
-        <div>
-            <div>Total Amount</div>
-            <button class="accept-btn" onclick="acceptOrder(this)">Accept Order</button>
-        </div>
-    </div>
+        {% endfor %}
+    {% else %}
+        <p>No service orders available based on your filters.</p>
+    {% endif %}
 </div>
 
 <script>
@@ -171,26 +153,61 @@
         const subcategoryDropdown = document.getElementById('subcategory');
         subcategoryDropdown.disabled = category === '';
 
-        // Update subcategory options based on selected category (dummy example)
-        subcategoryDropdown.innerHTML = '<option value="">Subcategory</option>';
         if (category === 'home_cleaning') {
-            subcategoryDropdown.innerHTML += '<option value="daily_cleaning">Daily Cleaning</option>';
-            subcategoryDropdown.innerHTML += '<option value="kitchen_cleaning">Kitchen Cleaning</option>';
+            subcategoryDropdown.innerHTML = `
+                <option value="">Subcategory</option>
+                <option value="setrika">Setrika</option>
+                <option value="daily_cleaning">Daily Cleaning</option>
+                <option value="pembersihan_dapur">Pembersihan Dapur</option>
+            `;
         } else if (category === 'massage') {
-            subcategoryDropdown.innerHTML += '<option value="therapeutic">Therapeutic</option>';
-            subcategoryDropdown.innerHTML += '<option value="relaxation">Relaxation</option>';
+            subcategoryDropdown.innerHTML = `
+                <option value="">Subcategory</option>
+                <option value="therapeutic">Therapeutic</option>
+                <option value="relaxation">Relaxation</option>
+            `;
+        } else {
+            subcategoryDropdown.innerHTML = `<option value="">Subcategory</option>`;
         }
     }
 
     function search() {
-        alert("Search function triggered.");
+        const category = document.getElementById('category').value;
+        const subcategory = document.getElementById('subcategory').value;
+        // Redirect to service_job2 with query parameters
+        const queryParams = new URLSearchParams({
+            category: category,
+            subcategory: subcategory
+        }).toString();
+        window.location.href = `/service_job2/?${queryParams}`;
     }
 
-    function acceptOrder(button) {
-        // Simulate order acceptance logic
-        button.innerText = "Order Accepted";
-        button.disabled = true;
-        alert("Order status updated and added to worker's active jobs.");
+    function acceptOrder(orderId) {
+        if (confirm("Are you sure you want to accept this order?")) {
+            fetch("{% url 'red:accept_order' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',  // Include CSRF token
+                },
+                body: JSON.stringify({
+                    'order_id': orderId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Order accepted successfully.");
+                    location.reload();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while accepting the order.");
+            });
+        }
     }
 </script>
 

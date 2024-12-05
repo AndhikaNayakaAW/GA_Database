@@ -1,8 +1,8 @@
+<!-- red/templates/service_job_status.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Job Status</title>
     <style>
         body {
@@ -10,14 +10,16 @@
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
+            background-color: #f4f4f9;
         }
         .container {
             width: 100%;
             max-width: 800px;
             margin: auto;
-            border: 1px solid #333;
+            border: 2px solid #333;
             padding: 20px;
             box-sizing: border-box;
+            background-color: #fff;
         }
         .header, .service-item {
             display: flex;
@@ -34,19 +36,22 @@
             border: 1px solid #333;
             margin-top: 10px;
             padding: 15px;
+            background-color: #f9f9f9;
         }
         .search-bar {
             display: flex;
             width: 100%;
             margin-bottom: 10px;
+            gap: 10px;
         }
         .search-bar input[type="text"] {
             flex: 1;
             padding: 8px;
-            margin-right: 10px;
         }
         .search-bar select, .search-bar button {
             padding: 8px;
+            width: 200px;
+            cursor: pointer;
         }
         .details {
             display: flex;
@@ -68,6 +73,24 @@
             padding: 8px 12px;
             font-size: 0.9em;
             margin-top: 5px;
+            cursor: pointer;
+            border: 1px solid #000;
+            background-color: #e0e0e0;
+        }
+        .status-update button:hover {
+            background-color: #d0d0d0;
+        }
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .details {
+                flex-direction: column;
+            }
+            .search-bar {
+                flex-direction: column;
+            }
+            .search-bar select, .search-bar button {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -75,85 +98,97 @@
 
 <div class="container">
     <div class="search-bar">
-        <input type="text" placeholder="Service Name">
-        <select>
-            <option>Service Status</option>
-            <option>Waiting for Worker to Depart</option>
-            <option>Worker Arrived at Location</option>
-            <option>Service in Progress</option>
-            <option>Order Completed</option>
-            <option>Order Canceled</option>
+        <input type="text" placeholder="Service Name" id="service-name">
+        <select id="service-status">
+            <option value="">Service Status</option>
+            <option value="Waiting for Worker to Depart">Waiting for Worker to Depart</option>
+            <option value="Worker Arrived at Location">Worker Arrived at Location</option>
+            <option value="Service in Progress">Service in Progress</option>
+            <option value="Order Completed">Order Completed</option>
+            <option value="Order Canceled">Order Canceled</option>
         </select>
-        <button>Search</button>
+        <button onclick="search()">Search</button>
     </div>
 
-    <!-- Service Item 1 -->
-    <div class="service-item">
-        <div class="details">
-            <div>
-                <strong>Service Subcategory Name</strong>
-                <p>Order Date</p>
-            </div>
-            <div>
-                <strong>User's Name</strong>
-                <p>Working Date</p>
-            </div>
-            <div>
-                <strong>Session</strong>
-                <p>Total Amount</p>
+    <!-- Service Items -->
+    {% if service_orders %}
+        {% for order in service_orders %}
+        <div class="service-item">
+            <div class="details">
+                <div>
+                    <strong>{{ order.service_subcategory }}</strong>
+                    <p>Order Date: {{ order.order_date|date:"Y-m-d" }}</p>
+                </div>
+                <div>
+                    <strong>{{ order.user_name }}</strong>
+                    <p>Working Date: {{ order.working_date|date:"Y-m-d" }}</p>
+                </div>
+                <div>
+                    <strong>Session</strong>
+                    <p>{{ order.session }}</p>
+                </div>
+                <div>
+                    <strong>Total Amount</strong>
+                    <p>Rp {{ order.total_amount|floatformat:2|intcomma }}</p>
+                </div>
             </div>
             <div class="status-update">
-                <strong>Service Status</strong>
-                <button>Button Update Status</button>
+                <strong>{{ order.status }}</strong>
+                {% if order.status == 'Waiting for Worker to Depart' %}
+                    <button onclick="updateStatus('{{ order.order_id }}', 'Worker Arrived at Location')">Arrived at Location</button>
+                {% elif order.status == 'Worker Arrived at Location' %}
+                    <button onclick="updateStatus('{{ order.order_id }}', 'Service in Progress')">Providing Service</button>
+                {% elif order.status == 'Service in Progress' %}
+                    <button onclick="updateStatus('{{ order.order_id }}', 'Order Completed')">Service Completed</button>
+                {% endif %}
             </div>
         </div>
-    </div>
-
-    <!-- Service Item 2 -->
-    <div class="service-item">
-        <div class="details">
-            <div>
-                <strong>Service Subcategory Name</strong>
-                <p>Order Date</p>
-            </div>
-            <div>
-                <strong>User's Name</strong>
-                <p>Working Date</p>
-            </div>
-            <div>
-                <strong>Session</strong>
-                <p>Total Amount</p>
-            </div>
-            <div class="status-update">
-                <strong>Service Status</strong>
-                <button>Button Update Status</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Service Item 3 -->
-    <div class="service-item">
-        <div class="details">
-            <div>
-                <strong>Service Subcategory Name</strong>
-                <p>Order Date</p>
-            </div>
-            <div>
-                <strong>User's Name</strong>
-                <p>Working Date</p>
-            </div>
-            <div>
-                <strong>Session</strong>
-                <p>Total Amount</p>
-            </div>
-            <div class="status-update">
-                <strong>Service Status</strong>
-                <button>Button Update Status</button>
-            </div>
-        </div>
-    </div>
-
+        {% endfor %}
+    {% else %}
+        <p>No service orders found.</p>
+    {% endif %}
 </div>
+
+<script>
+    function search() {
+        const serviceName = document.getElementById('service-name').value;
+        const serviceStatus = document.getElementById('service-status').value;
+        // Implement search functionality, possibly via AJAX or by redirecting with query parameters
+        // For demonstration, we'll redirect with query parameters
+        const queryParams = new URLSearchParams({
+            service_name: serviceName,
+            service_status: serviceStatus
+        }).toString();
+        window.location.href = `/service_job_status/?${queryParams}`;
+    }
+
+    function updateStatus(orderId, newStatus) {
+        fetch("{% url 'red:update_service_status' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',  // Include CSRF token for POST
+            },
+            body: JSON.stringify({
+                'order_id': orderId,
+                'new_status': newStatus
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Order status updated successfully.");
+                location.reload();
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred.");
+        });
+    }
+</script>
 
 </body>
 </html>

@@ -1,8 +1,8 @@
+<!-- red/templates/mypay.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyPay</title>
     <style>
         body {
@@ -52,6 +52,12 @@
             cursor: pointer;
             background-color: #e0e0e0;
         }
+        .transact-button a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            height: 100%;
+        }
         .transaction-history {
             border: 1px solid #000;
             padding: 10px;
@@ -75,6 +81,10 @@
             flex: 1;
             text-align: center;
         }
+        /* Optional: Add hover effects */
+        .transact-button:hover {
+            background-color: #d0d0d0;
+        }
     </style>
 </head>
 <body>
@@ -82,30 +92,32 @@
         <h1 style="text-align: left;">MyPay</h1>
         <div class="header">
             <div class="phone-balance">
-                <p>Phone Number</p>
-                <p>Balance</p>
+                <p>{{ phone_number }}</p>
+                <p>Rp {{ balance|floatformat:2|intcomma }}</p>
             </div>
             <div class="transact-button">
-                <p>Transact</p>
+                <a href="{% url 'red:mypay_transaction' %}"><p>Transact</p></a>
             </div>
         </div>
         <div class="transaction-history">
             <h3>Transaction History</h3>
-            <div class="transaction-item">
-                <p>+- Amount</p>
-                <p>Date</p>
-                <p>Transaction Category</p>
-            </div>
-            <div class="transaction-item">
-                <p>+- Amount</p>
-                <p>Date</p>
-                <p>Transaction Category</p>
-            </div>
-            <div class="transaction-item">
-                <p>+- Amount</p>
-                <p>Date</p>
-                <p>Transaction Category</p>
-            </div>
+            {% if transactions %}
+                {% for txn in transactions %}
+                <div class="transaction-item">
+                    <p>
+                        {% if txn.amount > 0 %}
+                            +Rp {{ txn.amount|floatformat:2|intcomma }}
+                        {% else %}
+                            -Rp {{ txn.amount|floatformat:2|intcomma|cut:"-" }}
+                        {% endif %}
+                    </p>
+                    <p>{{ txn.timestamp|date:"Y-m-d H:i:s" }}</p>
+                    <p>{{ txn.transaction_type }}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No transactions found.</p>
+            {% endif %}
         </div>
     </div>
 </body>
