@@ -1,135 +1,126 @@
-# yellow/views.py
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import User, Worker
-from django.db import IntegrityError
+from django.shortcuts import render
+from django.db import connection, transaction
+from django.http import JsonResponse
+from uuid import uuid4
+from datetime import datetime
 
 def iflogin_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-
-        # Authenticate user
-        try:
-            user = User.objects.get(phone_num=username, pwd=password)  
-            request.session['user_id'] = str(user.id)
-            messages.success(request, 'Login successful!')
-            return redirect('yellow:dashboard')
-        except User.DoesNotExist:
-            messages.error(request, 'Invalid phone number or password.')
-
-    # Render the correct template
+    """
+    Render the iflogin.html template for login functionality.
+    """
     return render(request, 'iflogin.html')
 
-
-
 def dashboard_view(request):
-    if 'user_id' not in request.session:
-        messages.warning(request, "Please login first.")
-        return redirect('yellow:iflogin')
-    return render(request, "yellow/dashboard.html", {"user_id": request.session['user_id']})
+    """
+    Render the dashboard view for the user.
+    """
+    return render(request, 'dashboard.html')
 
 def logout_view(request):
-    if 'user_id' in request.session:
-        del request.session['user_id']
-    messages.info(request, "Logged out successfully.")
-    return redirect('yellow:login')
+    """
+    Handle the user logout process.
+    """
+    # Example placeholder logic
+    return JsonResponse({'message': 'Logout successful', 'success': True})
 
-# Role Selection View
 def role_selection_view(request):
+    """
+    Render the role selection page for the user.
+    """
     return render(request, 'role_selection.html')
 
 def user_register_view(request):
+    """
+    Validates phone number uniqueness and registers a new user.
+    """
     if request.method == 'POST':
+        phone_number = request.POST.get('phoneNum')
+        if not check_phone_uniqueness(phone_number):
+            return JsonResponse({'message': f'Phone number {phone_number} is already registered.', 'success': False})
+
+        # If unique, proceed to register user
         name = request.POST.get('name')
-        password = request.POST.get('password')  # TODO: Hash the password in production
         sex = request.POST.get('sex')
-        phone = request.POST.get('phone')
-        birthdate = request.POST.get('birthdate')
+        pwd = request.POST.get('pwd')
+        dob = request.POST.get('dob')
         address = request.POST.get('address')
 
-        # Validate the form
-        if not all([name, password, sex, phone, birthdate, address]):
-            messages.error(request, 'All fields are required.')
-            return render(request, 'user_register.html')
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO USER (Id, Name, Sex, PhoneNum, Pwd, DoB, Address, MyPayBalance)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, [str(uuid4()), name, sex, phone_number, pwd, dob, address, 0.00])
 
-        if len(phone) > 20:
-            messages.error(request, 'Phone number must not exceed 20 characters.')
-            return render(request, 'user_register.html')
+        return JsonResponse({'message': 'User registered successfully!', 'success': True})
 
-        # Check if the phone number is already registered
-        if User.objects.filter(phone_num=phone).exists():
-            messages.error(request, 'Phone number is already registered.')
-            return redirect('yellow:iflogin')
+    return JsonResponse({'message': 'Invalid request method', 'success': False})
 
-        # Create a new user
-        try:
-            user = User(
-                name=name,
-                pwd=password,  # Hash this in production
-                sex=sex,
-                phone_num=phone,
-                dob=birthdate,
-                address=address,
-                my_pay_balance=0.00  # Default balance
-            )
-            user.save()
-            messages.success(request, 'Registration successful!')
-            return redirect('yellow:iflogin')
-        except Exception as e:
-            messages.error(request, f'An error occurred: {str(e)}')
-            return render(request, 'user_register.html')
-
-    return render(request, 'user_register.html')
-
-
-# Worker Registration View
 def worker_register_view(request):
+    """
+    Validates phone number and bank account uniqueness, then registers a new worker.
+    """
     if request.method == 'POST':
-        try:
-            name = request.POST.get('name')
-            password = request.POST.get('password')
-            sex = request.POST.get('sex')
-            phone_num = request.POST.get('phone')
-            dob = request.POST.get('birthdate')
-            address = request.POST.get('address')
-            bank_name = request.POST.get('bank')
-            account_number = request.POST.get('account')
-            npwp = request.POST.get('npwp')
-            pic_url = request.POST.get('image')
+        # Extract worker details from the request
+        phone_number = request.POST.get('phoneNum')
+        bank_name = request.POST.get('bankName')
+        acc_number = request.POST.get('accNumber')
 
-            # Check if phone number already exists
-            if User.objects.filter(phone_num=phone_num).exists():
-                messages.error(request, 'Phone number already exists.')
-                return redirect('yellow:worker_register')
+        # Check for phone number uniqueness
+        if not check_phone_uniqueness(phone_number):
+            return JsonResponse({'message': f'Phone number {phone_number} is already registered.', 'success': False})
 
-            # Create the User instance
-            user = User.objects.create(
-                name=name,
-                pwd=password,
-                sex=sex,
-                phone_num=phone_num,
-                dob=dob,
-                address=address,
-                my_pay_balance=0.0  # Default balance for workers
-            )
+        # Check for bank account uniqueness
+        if not check_bank_account_uniqueness(bank_name, acc_number):
+            return JsonResponse({
+                'message': f'Bank name "{bank_name}" and account number "{acc_number}" combination is already registered.',
+                'success': False
+            })
 
-            # Create the Worker instance
-            Worker.objects.create(
-                id=user,  # Pass the User instance
-                bank_name=bank_name,
-                acc_number=account_number,
-                npwp=npwp,
-                pic_url=pic_url,
-                rate=0.0,  # Default rate
-                total_finish_order=0  # Default completed orders
-            )
+        # If all validations pass, register the worker
+        name = request.POST.get('name')
+        sex = request.POST.get('sex')
+        pwd = request.POST.get('pwd')
+        dob = request.POST.get('dob')
+        address = request.POST.get('address')
+        npwp = request.POST.get('npwp')  # Tax ID for workers
+        pic_url = request.POST.get('picUrl')  # Picture URL for workers
 
-            messages.success(request, 'Worker registered successfully!')
-            return redirect('yellow:iflogin')  # Redirect to login page
-        except Exception as e:
-            messages.error(request, f"An error occurred: {e}")
-            return redirect('yellow:worker_register')
+        with connection.cursor() as cursor:
+            # Insert into the USER table
+            user_id = str(uuid4())
+            cursor.execute("""
+                INSERT INTO USER (Id, Name, Sex, PhoneNum, Pwd, DoB, Address, MyPayBalance)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, [user_id, name, sex, phone_number, pwd, dob, address, 0.00])
 
-    return render(request, 'worker_register.html')
+            # Insert into the WORKER table
+            cursor.execute("""
+                INSERT INTO WORKER (Id, BankName, AccNumber, NPWP, PicURL, Rate, TotalFinishOrder)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, [user_id, bank_name, acc_number, npwp, pic_url, 0.0, 0])
+
+        return JsonResponse({'message': 'Worker registered successfully!', 'success': True})
+
+    return JsonResponse({'message': 'Invalid request method', 'success': False})
+
+# Helper Functions
+def check_phone_uniqueness(phone_number):
+    """
+    Verifies if the phone number is unique in the USER table.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1 FROM USER WHERE PhoneNum = %s", [phone_number])
+        result = cursor.fetchone()
+    return result is None  # Returns True if unique, False otherwise
+
+def check_bank_account_uniqueness(bank_name, acc_number):
+    """
+    Verifies if the combination of bank name and account number is unique in the WORKER table.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT 1 FROM WORKER WHERE BankName = %s AND AccNumber = %s",
+            [bank_name, acc_number]
+        )
+        result = cursor.fetchone()
+    return result is None  # Returns True if unique, False otherwise
