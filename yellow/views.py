@@ -1,13 +1,31 @@
-from django.shortcuts import render
-from django.db import connection, transaction
+from django.shortcuts import render, redirect
+from django.db import connection
 from django.http import JsonResponse
 from uuid import uuid4
 from datetime import datetime
 
 def iflogin_view(request):
     """
-    Render the iflogin.html template for login functionality.
+    Render the iflogin.html template for login functionality and handle login.
     """
+    if request.method == 'POST':
+        phone_number = request.POST.get('phoneNum')
+        password = request.POST.get('pwd')
+        
+        # Check user credentials
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT Id FROM USER WHERE PhoneNum = %s AND Pwd = %s
+            """, [phone_number, password])
+            user = cursor.fetchone()
+
+        if user:
+            # Login successful, redirect to homepage
+            return redirect('/Users/geordie/Desktop/TK2/GA2_Database/green/templates/homepage.html')
+        else:
+            # Login failed, show error message
+            return render(request, 'iflogin.html', {'error': 'Invalid phone number or password.'})
+
     return render(request, 'iflogin.html')
 
 def dashboard_view(request):
@@ -20,7 +38,6 @@ def logout_view(request):
     """
     Handle the user logout process.
     """
-    # Example placeholder logic
     return JsonResponse({'message': 'Logout successful', 'success': True})
 
 def role_selection_view(request):
@@ -38,7 +55,6 @@ def user_register_view(request):
         if not check_phone_uniqueness(phone_number):
             return JsonResponse({'message': f'Phone number {phone_number} is already registered.', 'success': False})
 
-        # If unique, proceed to register user
         name = request.POST.get('name')
         sex = request.POST.get('sex')
         pwd = request.POST.get('pwd')
@@ -60,40 +76,34 @@ def worker_register_view(request):
     Validates phone number and bank account uniqueness, then registers a new worker.
     """
     if request.method == 'POST':
-        # Extract worker details from the request
         phone_number = request.POST.get('phoneNum')
         bank_name = request.POST.get('bankName')
         acc_number = request.POST.get('accNumber')
 
-        # Check for phone number uniqueness
         if not check_phone_uniqueness(phone_number):
             return JsonResponse({'message': f'Phone number {phone_number} is already registered.', 'success': False})
 
-        # Check for bank account uniqueness
         if not check_bank_account_uniqueness(bank_name, acc_number):
             return JsonResponse({
                 'message': f'Bank name "{bank_name}" and account number "{acc_number}" combination is already registered.',
                 'success': False
             })
 
-        # If all validations pass, register the worker
         name = request.POST.get('name')
         sex = request.POST.get('sex')
         pwd = request.POST.get('pwd')
         dob = request.POST.get('dob')
         address = request.POST.get('address')
-        npwp = request.POST.get('npwp')  # Tax ID for workers
-        pic_url = request.POST.get('picUrl')  # Picture URL for workers
+        npwp = request.POST.get('npwp')
+        pic_url = request.POST.get('picUrl')
 
         with connection.cursor() as cursor:
-            # Insert into the USER table
             user_id = str(uuid4())
             cursor.execute("""
                 INSERT INTO USER (Id, Name, Sex, PhoneNum, Pwd, DoB, Address, MyPayBalance)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, [user_id, name, sex, phone_number, pwd, dob, address, 0.00])
 
-            # Insert into the WORKER table
             cursor.execute("""
                 INSERT INTO WORKER (Id, BankName, AccNumber, NPWP, PicURL, Rate, TotalFinishOrder)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -111,7 +121,7 @@ def check_phone_uniqueness(phone_number):
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1 FROM USER WHERE PhoneNum = %s", [phone_number])
         result = cursor.fetchone()
-    return result is None  # Returns True if unique, False otherwise
+    return result is None
 
 def check_bank_account_uniqueness(bank_name, acc_number):
     """
@@ -123,4 +133,4 @@ def check_bank_account_uniqueness(bank_name, acc_number):
             [bank_name, acc_number]
         )
         result = cursor.fetchone()
-    return result is None  # Returns True if unique, False otherwise
+    return result is None
