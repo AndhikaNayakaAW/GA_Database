@@ -26,6 +26,6 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('register/', views.register, name='register'),
     path('yellow/', include('yellow.urls')),
-    path('', include('red.urls')),  # Include URLs from the 'red' app
+    path('red/', include('red.urls')),  # Include URLs from the 'red' app
 
 ]

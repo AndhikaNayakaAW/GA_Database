@@ -11,7 +11,8 @@ def iflogin_view(request):
     if request.method == 'POST':
         phone_number = request.POST.get('phoneNum')
         password = request.POST.get('pwd')
-        
+        print(phone_number, password)
+
         # Check user credentials
         with connection.cursor() as cursor:
             cursor.execute("""
@@ -21,6 +22,8 @@ def iflogin_view(request):
 
         if user:
             # Login successful: render the homepage template or redirect to a named URL
+            request.session['user_id'] = str(user[0])
+            request.session['is_authenticated'] = True
             return render(request, 'homepage.html')
         else:
             # Login failed, show error message
