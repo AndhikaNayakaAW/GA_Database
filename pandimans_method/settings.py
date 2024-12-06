@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "green",
     "red",
     "blue",
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
