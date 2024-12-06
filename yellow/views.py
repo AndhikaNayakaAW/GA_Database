@@ -15,13 +15,13 @@ def iflogin_view(request):
         # Check user credentials
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT Id FROM USER WHERE PhoneNum = %s AND Pwd = %s
+                SELECT id FROM "USER" WHERE phonenum = %s AND pwd = %s
             """, [phone_number, password])
             user = cursor.fetchone()
 
         if user:
-            # Login successful, redirect to homepage
-            return redirect('/Users/geordie/Desktop/TK2/GA2_Database/green/templates/homepage.html')
+            # Login successful: render the homepage template or redirect to a named URL
+            return render(request, 'homepage.html')
         else:
             # Login failed, show error message
             return render(request, 'iflogin.html', {'error': 'Invalid phone number or password.'})
@@ -63,7 +63,7 @@ def user_register_view(request):
 
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO USER (Id, Name, Sex, PhoneNum, Pwd, DoB, Address, MyPayBalance)
+                INSERT INTO "USER" (id, name, sex, phonenum, pwd, dob, address, mypaybalance)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, [str(uuid4()), name, sex, phone_number, pwd, dob, address, 0.00])
 
@@ -100,12 +100,12 @@ def worker_register_view(request):
         with connection.cursor() as cursor:
             user_id = str(uuid4())
             cursor.execute("""
-                INSERT INTO USER (Id, Name, Sex, PhoneNum, Pwd, DoB, Address, MyPayBalance)
+                INSERT INTO "USER" (id, name, sex, phonenum, pwd, dob, address, mypaybalance)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, [user_id, name, sex, phone_number, pwd, dob, address, 0.00])
 
             cursor.execute("""
-                INSERT INTO WORKER (Id, BankName, AccNumber, NPWP, PicURL, Rate, TotalFinishOrder)
+                INSERT INTO "WORKER" (id, bankname, accnumber, npwp, picurl, rate, totalfinishorder)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, [user_id, bank_name, acc_number, npwp, pic_url, 0.0, 0])
 
@@ -113,13 +113,14 @@ def worker_register_view(request):
 
     return JsonResponse({'message': 'Invalid request method', 'success': False})
 
+
 # Helper Functions
 def check_phone_uniqueness(phone_number):
     """
     Verifies if the phone number is unique in the USER table.
     """
     with connection.cursor() as cursor:
-        cursor.execute("SELECT 1 FROM USER WHERE PhoneNum = %s", [phone_number])
+        cursor.execute("SELECT 1 FROM \"USER\" WHERE phonenum = %s", [phone_number])
         result = cursor.fetchone()
     return result is None
 
@@ -129,7 +130,7 @@ def check_bank_account_uniqueness(bank_name, acc_number):
     """
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT 1 FROM WORKER WHERE BankName = %s AND AccNumber = %s",
+            "SELECT 1 FROM \"WORKER\" WHERE bankname = %s AND accnumber = %s",
             [bank_name, acc_number]
         )
         result = cursor.fetchone()

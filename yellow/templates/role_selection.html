@@ -46,12 +46,16 @@
 <body>
     <div class="container">
         <h2>Select Your Role</h2>
-        <a href="{% url 'yellow:user_register' %}">
-            <button>User</button>
-        </a>
-        <a href="{% url 'yellow:worker_register' %}">
-            <button>Worker</button>
-        </a>
+        <!-- Form for User registration -->
+        <form action="{% url 'yellow:user_register' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">User</button>
+        </form>
+        <!-- Form for Worker registration -->
+        <form action="{% url 'yellow:worker_register' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">Worker</button>
+        </form>
     </div>
 </body>
 </html>
