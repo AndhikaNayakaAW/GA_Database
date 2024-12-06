@@ -7,7 +7,6 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 import json
 
-# Home Page View
 @login_required
 def order_status(request):
     """
@@ -17,234 +16,243 @@ def order_status(request):
         return redirect('red:service_job_status')
     elif request.user.role == 'User':
         return redirect('red:mypay')
-    else:
-        return render(request, 'access_denied.html', status=403)
+    return render(request, 'access_denied.html', status=403)
 
-# MyPay Overview View
 @login_required
 def mypay(request):
     """
     Displays the user's MyPay balance and transaction history.
     """
     user_id = request.user.id
-
     with connection.cursor() as cursor:
-        # Fetch MyPay balance
-        cursor.execute("SELECT balance FROM MyPay WHERE user_id = %s", [user_id])
+        # Fetch MyPay balance from "USER"
+        cursor.execute('SELECT MyPayBalance FROM "USER" WHERE Id = %s', [user_id])
         row = cursor.fetchone()
         balance = row[0] if row else 0.0
 
-        # Fetch Transactions
+        # Fetch Transactions from TR_MYPAY joined with TR_MYPAY_CATEGORY
         cursor.execute("""
-            SELECT transaction_id, transaction_type, amount, timestamp, details
-            FROM Transactions
-            WHERE mypay_id = (SELECT mypay_id FROM MyPay WHERE user_id = %s)
-            ORDER BY timestamp DESC
+            SELECT t.Id, c.Name, t.Nominal, t.Date
+            FROM TR_MYPAY t
+            JOIN TR_MYPAY_CATEGORY c ON t.CategoryId = c.Id
+            WHERE t.UserId = %s
+            ORDER BY t.Date DESC
         """, [user_id])
         transactions = cursor.fetchall()
 
-    # Process transactions for template
     transaction_list = []
     for txn in transactions:
-        transaction_id, transaction_type, amount, timestamp, details = txn
+        txn_id, category, nominal, date = txn
         transaction_list.append({
-            'transaction_id': transaction_id,
-            'transaction_type': transaction_type,
-            'amount': float(amount),
-            'timestamp': timestamp,
-            'details': json.loads(details) if details else {},
+            'id': str(txn_id),
+            'transaction_type': category,
+            'amount': float(nominal),
+            'timestamp': date,
         })
 
     context = {
-        'phone_number': request.user.phone_number,  # Ensure 'phone_number' exists in User model
+        'phone_number': request.user.PhoneNum,
         'balance': balance,
         'transactions': transaction_list,
     }
-
     return render(request, 'mypay.html', context)
 
-# MyPay Transaction View
 @login_required
 def mypay_transaction(request):
     """
     Handles MyPay transactions: Top-Up, Service Payment, Transfer, Withdrawal.
     """
     user_id = request.user.id
-
     if request.method == 'POST':
+        transaction_category = request.POST.get('transaction_category')
         try:
-            transaction_type = request.POST.get('transaction_category')
-            with connection.cursor() as cursor:
-                # Begin atomic transaction
-                with transaction.atomic():
-                    # Fetch MyPay info
-                    cursor.execute("SELECT mypay_id, balance FROM MyPay WHERE user_id = %s FOR UPDATE", [user_id])
-                    mypay = cursor.fetchone()
-                    if not mypay:
-                        raise Exception("MyPay account not found")
-                    mypay_id, balance = mypay
+            with connection.cursor() as cursor, transaction.atomic():
+                # Fetch user balance
+                cursor.execute('SELECT MyPayBalance FROM "USER" WHERE Id = %s FOR UPDATE', [user_id])
+                row = cursor.fetchone()
+                if not row:
+                    raise Exception("User not found")
+                balance = row[0] if row[0] else 0.0
 
-                    details = {}
-                    if transaction_type == 'Top-Up':
-                        amount = float(request.POST.get('amount', 0))
-                        if amount <= 0:
-                            raise Exception("Invalid top-up amount")
+                if transaction_category == 'Top-Up':
+                    amount = float(request.POST.get('amount', 0))
+                    if amount <= 0:
+                        raise Exception("Invalid top-up amount")
 
-                        # Update balance
-                        new_balance = balance + amount
-                        cursor.execute("UPDATE MyPay SET balance = %s WHERE mypay_id = %s", [new_balance, mypay_id])
+                    # Update user balance
+                    new_balance = balance + amount
+                    cursor.execute('UPDATE "USER" SET MyPayBalance = %s WHERE Id = %s', [new_balance, user_id])
 
-                        # Insert transaction
-                        details = {'method': 'Manual Top-Up'}
-                        cursor.execute("""
-                            INSERT INTO Transactions (transaction_id, mypay_id, transaction_type, amount, timestamp, details)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, [str(uuid4()), mypay_id, 'TopUp', amount, datetime.now(), json.dumps(details)])
+                    # Insert transaction in TR_MYPAY (Top-Up)
+                    cursor.execute("""
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
+                        VALUES (%s, %s, CURRENT_DATE, %s,
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Top-Up'))
+                    """, [uuid4(), user_id, amount])
 
-                    elif transaction_type == 'Service Payment':
-                        service_session_id = request.POST.get('service_session')
-                        order_id = request.POST.get('order_id')  # Ensure 'order_id' is provided in the form
-                        if not service_session_id or not order_id:
-                            raise Exception("Service session or order ID not provided")
+                elif transaction_category == 'Service Payment':
+                    # User chooses an order to pay
+                    order_id = request.POST.get('order_id')
+                    if not order_id:
+                        raise Exception("Order ID not provided")
 
-                        # Fetch service price
-                        cursor.execute("SELECT price FROM Services WHERE service_id = %s", [service_session_id])
-                        service = cursor.fetchone()
-                        if not service:
-                            raise Exception("Service not found")
-                        service_price = float(service[0])
+                    # Fetch order price from TR_SERVICE_ORDER join SERVICE_SESSION
+                    cursor.execute("""
+                        SELECT o.Id, ss.Price
+                        FROM TR_SERVICE_ORDER o
+                        JOIN SERVICE_SESSION ss ON (o.subcategoryId = ss.SubcategoryId AND o.Session = ss.Session)
+                        WHERE o.Id = %s AND o.customerId = %s AND o.Status = 'Waiting for Payment'
+                    """, [order_id, user_id])
+                    order = cursor.fetchone()
+                    if not order:
+                        raise Exception("Order not found or not in payable state")
+                    service_price = float(order[1])
 
-                        if balance < service_price:
-                            raise Exception("Insufficient balance for service payment")
+                    if balance < service_price:
+                        raise Exception("Insufficient balance for service payment")
 
-                        # Update balance
-                        new_balance = balance - service_price
-                        cursor.execute("UPDATE MyPay SET balance = %s WHERE mypay_id = %s", [new_balance, mypay_id])
+                    # Deduct balance
+                    new_balance = balance - service_price
+                    cursor.execute('UPDATE "USER" SET MyPayBalance = %s WHERE Id = %s', [new_balance, user_id])
 
-                        # Insert transaction
-                        details = {'service_session_id': service_session_id}
-                        cursor.execute("""
-                            INSERT INTO Transactions (transaction_id, mypay_id, transaction_type, amount, timestamp, details)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, [str(uuid4()), mypay_id, 'ServicePayment', -service_price, datetime.now(), json.dumps(details)])
+                    # Insert TR_MYPAY record (Service Payment)
+                    cursor.execute("""
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
+                        VALUES (%s, %s, CURRENT_DATE, %s,
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Payment'))
+                    """, [uuid4(), user_id, -service_price])
 
-                        # Update Service Order Status to 'Paid'
-                        cursor.execute("""
-                            UPDATE ServiceOrders
-                            SET status = 'Paid'
-                            WHERE order_id = %s AND user_id = %s
-                        """, [order_id, user_id])
+                    # Update order status to 'Payment Confirmed'
+                    cursor.execute("""
+                        UPDATE TR_SERVICE_ORDER
+                        SET Status = 'Payment Confirmed'
+                        WHERE Id = %s AND customerId = %s
+                    """, [order_id, user_id])
 
-                    elif transaction_type == 'Transfer':
-                        recipient_phone = request.POST.get('recipient_phone')
-                        transfer_amount = float(request.POST.get('transfer_amount', 0))
-                        if not recipient_phone or transfer_amount <= 0:
-                            raise Exception("Recipient phone number and valid transfer amount required")
-                        if balance < transfer_amount:
-                            raise Exception("Insufficient balance for transfer")
+                elif transaction_category == 'Transfer':
+                    recipient_phone = request.POST.get('recipient_phone')
+                    transfer_amount = float(request.POST.get('transfer_amount', 0))
+                    if not recipient_phone or transfer_amount <= 0:
+                        raise Exception("Invalid recipient phone or transfer amount")
 
-                        # Fetch recipient user_id and mypay_id
-                        cursor.execute("SELECT user_id FROM Users WHERE phone_number = %s", [recipient_phone])
-                        recipient = cursor.fetchone()
-                        if not recipient:
-                            raise Exception("Recipient not found")
-                        recipient_id = recipient[0]
+                    if balance < transfer_amount:
+                        raise Exception("Insufficient balance for transfer")
 
-                        cursor.execute("SELECT mypay_id, balance FROM MyPay WHERE user_id = %s FOR UPDATE", [recipient_id])
-                        recipient_mypay = cursor.fetchone()
-                        if not recipient_mypay:
-                            raise Exception("Recipient MyPay account not found")
-                        recipient_mypay_id, recipient_balance = recipient_mypay
+                    # Find recipient
+                    cursor.execute('SELECT Id FROM "USER" WHERE PhoneNum = %s', [recipient_phone])
+                    rec = cursor.fetchone()
+                    if not rec:
+                        raise Exception("Recipient not found")
+                    recipient_id = rec[0]
 
-                        # Update sender's balance
-                        new_balance = balance - transfer_amount
-                        cursor.execute("UPDATE MyPay SET balance = %s WHERE mypay_id = %s", [new_balance, mypay_id])
+                    # Lock recipient
+                    cursor.execute('SELECT MyPayBalance FROM "USER" WHERE Id = %s FOR UPDATE', [recipient_id])
+                    rec_balance_row = cursor.fetchone()
+                    if not rec_balance_row:
+                        raise Exception("Recipient user not found")
+                    recipient_balance = rec_balance_row[0] if rec_balance_row[0] else 0.0
 
-                        # Update recipient's balance
-                        new_recipient_balance = recipient_balance + transfer_amount
-                        cursor.execute("UPDATE MyPay SET balance = %s WHERE mypay_id = %s", [new_recipient_balance, recipient_mypay_id])
+                    # Update sender
+                    new_balance = balance - transfer_amount
+                    cursor.execute('UPDATE "USER" SET MyPayBalance = %s WHERE Id = %s', [new_balance, user_id])
 
-                        # Insert transaction for sender
-                        sender_details = {'recipient_phone': recipient_phone}
-                        cursor.execute("""
-                            INSERT INTO Transactions (transaction_id, mypay_id, transaction_type, amount, timestamp, details)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, [str(uuid4()), mypay_id, 'Transfer', -transfer_amount, datetime.now(), json.dumps(sender_details)])
+                    # Update recipient
+                    new_recipient_balance = recipient_balance + transfer_amount
+                    cursor.execute('UPDATE "USER" SET MyPayBalance = %s WHERE Id = %s', [new_recipient_balance, recipient_id])
 
-                        # Insert transaction for recipient
-                        recipient_details = {'sender_id': user_id}
-                        cursor.execute("""
-                            INSERT INTO Transactions (transaction_id, mypay_id, transaction_type, amount, timestamp, details)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, [str(uuid4()), recipient_mypay_id, 'Transfer', transfer_amount, datetime.now(), json.dumps(recipient_details)])
+                    # Insert TR_MYPAY for sender (Payment)
+                    cursor.execute("""
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
+                        VALUES (%s, %s, CURRENT_DATE, %s,
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Payment'))
+                    """, [uuid4(), user_id, -transfer_amount])
 
-                    elif transaction_type == 'Withdrawal':
-                        bank_name = request.POST.get('bank_name')
-                        bank_account = request.POST.get('bank_account')
-                        withdrawal_amount = float(request.POST.get('withdrawal_amount', 0))
-                        if not bank_name or not bank_account or withdrawal_amount <= 0:
-                            raise Exception("Bank name, account number, and valid withdrawal amount required")
-                        if balance < withdrawal_amount:
-                            raise Exception("Insufficient balance for withdrawal")
+                    # Insert TR_MYPAY for recipient (Refund or Adjustment)
+                    # Since the schema doesn't define a 'Transfer' category distinctly, we can consider it as 'Adjustment'
+                    cursor.execute("""
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
+                        VALUES (%s, %s, CURRENT_DATE, %s,
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Adjustment'))
+                    """, [uuid4(), recipient_id, transfer_amount])
 
-                        # Update balance
-                        new_balance = balance - withdrawal_amount
-                        cursor.execute("UPDATE MyPay SET balance = %s WHERE mypay_id = %s", [new_balance, mypay_id])
+                elif transaction_category == 'Withdrawal':
+                    withdrawal_amount = float(request.POST.get('withdrawal_amount', 0))
+                    if withdrawal_amount <= 0:
+                        raise Exception("Invalid withdrawal amount")
+                    if balance < withdrawal_amount:
+                        raise Exception("Insufficient balance for withdrawal")
 
-                        # Insert transaction
-                        details = {'bank_name': bank_name, 'bank_account': bank_account}
-                        cursor.execute("""
-                            INSERT INTO Transactions (transaction_id, mypay_id, transaction_type, amount, timestamp, details)
-                            VALUES (%s, %s, %s, %s, %s, %s)
-                        """, [str(uuid4()), mypay_id, 'Withdrawal', -withdrawal_amount, datetime.now(), json.dumps(details)])
+                    # Deduct balance
+                    new_balance = balance - withdrawal_amount
+                    cursor.execute('UPDATE "USER" SET MyPayBalance = %s WHERE Id = %s', [new_balance, user_id])
 
-                        # Note: Assume external API call here for processing withdrawal
+                    # Insert TR_MYPAY (Withdrawal)
+                    cursor.execute("""
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
+                        VALUES (%s, %s, CURRENT_DATE, %s,
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Withdrawal'))
+                    """, [uuid4(), user_id, -withdrawal_amount])
 
-                    else:
-                        raise Exception("Invalid transaction type")
+                else:
+                    raise Exception("Invalid transaction type")
 
-            # Commit transaction
-            transaction.commit()
             return redirect('red:mypay')
 
         except Exception as e:
-            # Rollback transaction in case of error
-            transaction.rollback()
-
-            # Fetch service sessions again for rendering
+            # On error, display form again with error message
             with connection.cursor() as cursor:
+                # Fetch service sessions (orders) where status='Waiting for Payment'
+                # Actually in your schema, 'Booked' was used in original code snippet, but
+                # we must align with the status used for orders waiting payment.
+                # Assume 'Waiting for Payment' orders:
                 cursor.execute("""
-                    SELECT sb.service_booking_id, s.service_name, s.price 
-                    FROM ServiceBookings sb 
-                    JOIN Services s ON sb.service_id = s.service_id 
-                    WHERE sb.user_id = %s AND sb.status = 'Booked'
+                    SELECT o.Id, ssc.SubcategoryName, ss.Price
+                    FROM TR_SERVICE_ORDER o
+                    JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
+                    JOIN SERVICE_SESSION ss ON (o.subcategoryId = ss.SubcategoryId AND o.Session = ss.Session)
+                    WHERE o.customerId = %s AND o.Status = 'Waiting for Payment'
                 """, [user_id])
                 service_sessions = cursor.fetchall()
 
-            context = {
+            service_sessions_list = []
+            for sess in service_sessions:
+                oid, sname, price = sess
+                service_sessions_list.append({
+                    'service_booking_id': str(oid),
+                    'service_name': sname,
+                    'price': price,
+                })
+
+            return render(request, 'mypay_transaction.html', {
                 'error': str(e),
-                'service_sessions': service_sessions,
-            }
-            return render(request, 'mypay_transaction.html', context)
+                'service_sessions': service_sessions_list,
+            })
 
     else:
-        # GET request: Display transaction form
+        # GET request: fetch orders waiting for payment
         with connection.cursor() as cursor:
-            # Fetch service sessions for the user to pay for
             cursor.execute("""
-                SELECT sb.service_booking_id, s.service_name, s.price 
-                FROM ServiceBookings sb 
-                JOIN Services s ON sb.service_id = s.service_id 
-                WHERE sb.user_id = %s AND sb.status = 'Booked'
+                SELECT o.Id, ssc.SubcategoryName, ss.Price
+                FROM TR_SERVICE_ORDER o
+                JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
+                JOIN SERVICE_SESSION ss ON (o.subcategoryId = ss.SubcategoryId AND o.Session = ss.Session)
+                WHERE o.customerId = %s AND o.Status = 'Waiting for Payment'
             """, [user_id])
             service_sessions = cursor.fetchall()
 
-        context = {
-            'service_sessions': service_sessions,
-        }
-        return render(request, 'mypay_transaction.html', context)
+        service_sessions_list = []
+        for sess in service_sessions:
+            oid, sname, price = sess
+            service_sessions_list.append({
+                'service_booking_id': str(oid),
+                'service_name': sname,
+                'price': price,
+            })
 
-# Service Job Status View
+        return render(request, 'mypay_transaction.html', {
+            'service_sessions': service_sessions_list,
+        })
+
 @login_required
 def service_job_status(request):
     """
@@ -255,39 +263,37 @@ def service_job_status(request):
 
     user_id = request.user.id
 
+    # Fetch service orders assigned to the worker
+    # Join with SERVICE_SUBCATEGORY to get subcategory name
+    # Join with CUSTOMER and USER to get customer's name
     with connection.cursor() as cursor:
-        # Fetch service orders assigned to the worker
         cursor.execute("""
-            SELECT so.order_id, so.service_subcategory, so.order_date, so.working_date, so.session, so.total_amount, so.status, u.name AS user_name
-            FROM ServiceOrders so
-            JOIN Users u ON so.user_id = u.user_id
-            WHERE so.worker_id = %s
-            ORDER BY so.order_date DESC
+            SELECT o.Id, ssc.SubcategoryName, o.orderDate, o.serviceDate, o.Session, o.TotalPrice, o.Status, u.Name
+            FROM TR_SERVICE_ORDER o
+            JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
+            JOIN CUSTOMER c ON o.customerId = c.Id
+            JOIN "USER" u ON c.Id = u.Id
+            WHERE o.workerId = %s
+            ORDER BY o.orderDate DESC
         """, [user_id])
         service_orders = cursor.fetchall()
 
-    # Process service orders for template
     order_list = []
     for order in service_orders:
-        order_id, service_subcategory, order_date, working_date, session, total_amount, status, user_name = order
+        oid, subcat, odate, sdate, sess, tprice, stat, uname = order
         order_list.append({
-            'order_id': order_id,
-            'service_subcategory': service_subcategory,
-            'order_date': order_date,
-            'working_date': working_date,
-            'session': session,
-            'total_amount': float(total_amount),
-            'status': status,
-            'user_name': user_name,
+            'order_id': str(oid),
+            'service_subcategory': subcat,
+            'order_date': odate,
+            'working_date': sdate,
+            'session': sess,
+            'total_amount': float(tprice),
+            'status': stat,
+            'user_name': uname,
         })
 
-    context = {
-        'service_orders': order_list,
-    }
+    return render(request, 'service_job_status.html', {'service_orders': order_list})
 
-    return render(request, 'service_job_status.html', context)
-
-# AJAX View to Update Service Order Status
 @login_required
 def update_service_status(request):
     """
@@ -307,7 +313,6 @@ def update_service_status(request):
         if not order_id or not new_status:
             raise Exception("Missing order_id or new_status")
 
-        # Define valid status transitions
         valid_transitions = {
             'Waiting for Worker to Depart': 'Worker Arrived at Location',
             'Worker Arrived at Location': 'Service in Progress',
@@ -315,25 +320,23 @@ def update_service_status(request):
         }
 
         with connection.cursor() as cursor:
-            # Fetch current status
             cursor.execute("""
-                SELECT status FROM ServiceOrders WHERE order_id = %s AND worker_id = %s
+                SELECT Status FROM TR_SERVICE_ORDER
+                WHERE Id = %s AND workerId = %s
             """, [order_id, request.user.id])
             row = cursor.fetchone()
             if not row:
                 raise Exception("Service order not found or access denied")
             current_status = row[0]
 
-            # Check if transition is valid
             expected_new_status = valid_transitions.get(current_status)
             if expected_new_status != new_status:
                 raise Exception("Invalid status transition")
 
-            # Update status
             cursor.execute("""
-                UPDATE ServiceOrders
-                SET status = %s
-                WHERE order_id = %s AND worker_id = %s
+                UPDATE TR_SERVICE_ORDER
+                SET Status = %s
+                WHERE Id = %s AND workerId = %s
             """, [new_status, order_id, request.user.id])
 
         return JsonResponse({'success': True})
@@ -341,26 +344,24 @@ def update_service_status(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-# Service Job Filter State 1 View
 @login_required
 def service_job1(request):
     """
     Handles the service job filtering form (State 1).
+    Just a form page; no queries.
     """
     if request.user.role != 'Worker':
         return render(request, 'access_denied.html', status=403)
 
     if request.method == 'POST':
-        # Retrieve filter parameters
+        # category and subcategory selected by the user
         category = request.POST.get('category')
         subcategory = request.POST.get('subcategory')
-
-        # Redirect to service_job2 with filter parameters
-        return redirect('red:service_job2')  # You can pass parameters via GET if needed
+        # Redirect with GET params
+        return redirect(f"{'/service_job2/'}?category={category}&subcategory={subcategory}")
 
     return render(request, 'service_job1.html')
 
-# Service Job Filter State 2 View
 @login_required
 def service_job2(request):
     """
@@ -369,53 +370,49 @@ def service_job2(request):
     if request.user.role != 'Worker':
         return render(request, 'access_denied.html', status=403)
 
-    # Fetch filter parameters (assuming passed via GET or session)
     category = request.GET.get('category', '')
     subcategory = request.GET.get('subcategory', '')
 
+    # Fetch available service orders that have no worker assigned
+    # Join SERVICE_SUBCATEGORY to get subcategory name, SERVICE_CATEGORY to get category
     with connection.cursor() as cursor:
-        # Fetch available service orders based on filters
         query = """
-            SELECT so.order_id, so.service_subcategory, so.order_date, so.working_date, so.session, so.total_amount, so.status, u.name AS user_name
-            FROM ServiceOrders so
-            JOIN Users u ON so.user_id = u.user_id
-            WHERE so.worker_id IS NULL  # Only orders not yet assigned
+            SELECT o.Id, ssc.SubcategoryName, o.orderDate, o.serviceDate, o.Session, o.TotalPrice, o.Status, u.Name
+            FROM TR_SERVICE_ORDER o
+            JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
+            JOIN CUSTOMER c ON o.customerId = c.Id
+            JOIN "USER" u ON c.Id = u.Id
+            JOIN SERVICE_CATEGORY sc ON ssc.ServiceCategoryId = sc.Id
+            WHERE o.workerId IS NULL
         """
         params = []
         if category:
-            query += " AND so.service_category = %s"
-            params.append(category)
+            query += " AND sc.CategoryName = %s"
+            params.append(category.replace('_', ' ').title())  # if needed adjust naming
         if subcategory:
-            query += " AND so.service_subcategory = %s"
-            params.append(subcategory)
+            query += " AND ssc.SubcategoryName ILIKE %s"
+            params.append('%' + subcategory.replace('_', ' ') + '%')
 
-        query += " ORDER BY so.order_date DESC"
-
+        query += " ORDER BY o.orderDate DESC"
         cursor.execute(query, params)
         service_orders = cursor.fetchall()
 
-    # Process service orders for template
     order_list = []
     for order in service_orders:
-        order_id, service_subcategory, order_date, working_date, session, total_amount, status, user_name = order
+        oid, subcat, odate, sdate, sess, tprice, stat, uname = order
         order_list.append({
-            'order_id': order_id,
-            'service_subcategory': service_subcategory,
-            'order_date': order_date,
-            'working_date': working_date,
-            'session': session,
-            'total_amount': float(total_amount),
-            'status': status,
-            'user_name': user_name,
+            'order_id': str(oid),
+            'service_subcategory': subcat,
+            'order_date': odate,
+            'working_date': sdate,
+            'session': sess,
+            'total_amount': float(tprice),
+            'status': stat,
+            'user_name': uname,
         })
 
-    context = {
-        'service_orders': order_list,
-    }
+    return render(request, 'service_job2.html', {'service_orders': order_list})
 
-    return render(request, 'service_job2.html', context)
-
-# AJAX View to Accept an Order
 @login_required
 def accept_order(request):
     """
@@ -430,21 +427,24 @@ def accept_order(request):
     try:
         data = json.loads(request.body)
         order_id = data.get('order_id')
-
         if not order_id:
             raise Exception("Order ID not provided")
 
         user_id = request.user.id
         job_date = datetime.now().date()
-        job_duration = job_date + timedelta(days=1)  # Assuming session=1 day
+        job_duration = job_date + timedelta(days=1)  # 1 session = 1 day as stated
 
         with connection.cursor() as cursor:
-            # Assign worker and update status
             cursor.execute("""
-                UPDATE ServiceOrders
-                SET worker_id = %s, status = 'Waiting for Worker to Depart', job_date = %s, job_duration = %s
-                WHERE order_id = %s AND worker_id IS NULL
-            """, [user_id, job_date, job_duration, order_id])
+                UPDATE TR_SERVICE_ORDER
+                SET workerId = %s, Status = 'Waiting for Worker to Depart',
+                    serviceDate = %s, 
+                    -- job_duration is not in schema, removing or ignoring it
+                    -- If job_duration not in schema, remove it.
+                    -- If needed, add a column to TR_SERVICE_ORDER.
+                    serviceTime = CURRENT_TIMESTAMP
+                WHERE Id = %s AND workerId IS NULL
+            """, [user_id, job_date, order_id])
 
             if cursor.rowcount == 0:
                 raise Exception("Order not found or already taken")
