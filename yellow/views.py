@@ -1,78 +1,111 @@
+import uuid
 from django.shortcuts import render, redirect
 from django.db import connection
-from django.http import JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 from uuid import uuid4
 from datetime import datetime
+from django.contrib.auth import logout
 
 def iflogin_view(request):
     """
-    Render the iflogin.html template for login functionality and handle login.
+    Handle login functionality and redirect to homepage upon successful login.
     """
     if request.method == 'POST':
-        phone_number = request.POST.get('phoneNum')
+        username = request.POST.get('phoneNum')  # Using phoneNum as username
         password = request.POST.get('pwd')
-        print(phone_number, password)
-
+        
         # Check user credentials
         with connection.cursor() as cursor:
             cursor.execute("""
-                SELECT id FROM "USER" WHERE phonenum = %s AND pwd = %s
-            """, [phone_number, password])
+                SELECT id, name FROM "USER" WHERE phonenum = %s AND pwd = %s
+            """, [username, password])
             user = cursor.fetchone()
 
         if user:
-            # Login successful: render the homepage template or redirect to a named URL
-            request.session['user_id'] = str(user[0])
-            request.session['is_authenticated'] = True
-            return render(request, 'homepage.html')
-        else:
-            # Login failed, show error message
-            return render(request, 'iflogin.html', {'error': 'Invalid phone number or password.'})
+            user_id = str(user[0])
+            user_name = user[1]  # Fetch the user's name from the database
 
+            # Check if the user is a worker
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 1 FROM worker WHERE id = %s
+                """, [user_id])
+                is_worker = cursor.fetchone()
+
+            # Set role based on whether the user is a worker
+            role = 'worker' if is_worker else 'user'
+
+            # Store session data
+            request.session['user_id'] = user_id
+            request.session['username'] = username  
+            request.session['user_name'] = user_name  
+            request.session['role'] = role
+            request.session['is_authenticated'] = True
+
+            # Redirect to homepage
+            return redirect('yellow:homepage')
+
+        else:
+            # Login failed: show error message
+            return render(request, 'iflogin.html', {'messages': ['Invalid username or password.']})
+
+    # Render login page for GET requests
     return render(request, 'iflogin.html')
 
-def dashboard_view(request):
+def homepage_view(request):
     """
-    Render the dashboard view for the user.
+    Render the homepage with dynamic user information.
     """
-    return render(request, 'dashboard.html')
+    if not request.session.get('is_authenticated'):
+        return redirect('yellow:iflogin')  # Redirect to login if not authenticated
 
-def logout_view(request):
-    """
-    Handle the user logout process.
-    """
-    return JsonResponse({'message': 'Logout successful', 'success': True})
+    # Retrieve data from session
+    user_name = request.session.get('user_name', 'Unknown User')
+    role = request.session.get('role', 'user')  # Default role is 'user'
 
-def role_selection_view(request):
-    """
-    Render the role selection page for the user.
-    """
-    return render(request, 'role_selection.html')
+    context = {
+        'role': role,
+        'name': user_name,
+    }
+    return render(request, 'homepage.html', context)
+
 
 def user_register_view(request):
     """
-    Validates phone number uniqueness and registers a new user.
+    Handle the user registration process and redirect to login page upon success.
     """
     if request.method == 'POST':
-        phone_number = request.POST.get('phoneNum')
-        if not check_phone_uniqueness(phone_number):
-            return JsonResponse({'message': f'Phone number {phone_number} is already registered.', 'success': False})
-
+        # Retrieve form data
         name = request.POST.get('name')
+        password = request.POST.get('password')
         sex = request.POST.get('sex')
-        pwd = request.POST.get('pwd')
-        dob = request.POST.get('dob')
+        phone = request.POST.get('phone')
+        birthdate = request.POST.get('birthdate')
         address = request.POST.get('address')
 
+        # Check if phone number already exists
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM \"USER\" WHERE phonenum = %s", [phone])
+            if cursor.fetchone():
+                # Return error message if phone number exists
+                return render(request, 'user_register.html', {
+                    'messages': ['Phone number already registered. Please use a different one.']
+                })
+
+        # Insert the new user into the database
         with connection.cursor() as cursor:
             cursor.execute("""
-                INSERT INTO "USER" (id, name, sex, phonenum, pwd, dob, address, mypaybalance)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, [str(uuid4()), name, sex, phone_number, pwd, dob, address, 0.00])
+                    INSERT INTO "USER" (Name, Pwd, Sex, PhoneNum, DoB, Address, MyPayBalance)
+                    VALUES (%s, %s, %s, %s, %s, %s, 0)
+                """, [name, password, sex, phone, birthdate, address])
 
-        return JsonResponse({'message': 'User registered successfully!', 'success': True})
+        # Redirect to login page with a success message
+        return redirect('yellow:iflogin')  
 
-    return JsonResponse({'message': 'Invalid request method', 'success': False})
+    # Render the registration form for GET requests
+    return render(request, 'user_register.html')
+
+
 
 def worker_register_view(request):
     """
@@ -138,3 +171,21 @@ def check_bank_account_uniqueness(bank_name, acc_number):
         )
         result = cursor.fetchone()
     return result is None
+
+
+
+def role_selection_view(request):
+    """
+    Render the role selection page and render appropriate registration pages on form submission.
+    """
+    if request.method == 'POST':
+        # Check which button was clicked
+        if 'user_register' in request.POST:
+            # Render the user registration page
+            return render(request, 'user_register.html')
+        elif 'worker_register' in request.POST:
+            # Render the worker registration page
+            return render(request, 'worker_register.html')
+
+    # Render the role selection page for GET requests
+    return render(request, 'role_selection.html')

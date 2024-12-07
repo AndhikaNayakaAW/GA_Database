@@ -78,6 +78,13 @@
   </style>
 </head>
 <body>
+  <!-- Include Navbar Based on Role -->
+  {% if role == 'worker' %}
+    {% include 'worker_navbar.html' %}
+  {% else %}
+    {% include 'user_navbar.html' %}
+  {% endif %}
+
   <div class="container">
     <!-- Filter Section -->
     <div class="filter-section">
