@@ -210,7 +210,7 @@ def logout_view(request):
     # Redirect to the login page
     return redirect('yellow:iflogin')
 
-def user_profile_view(request):
+def user_profile(request):
     if not request.session.get('is_authenticated'):
         return redirect('yellow:iflogin')  # User must be logged in
 

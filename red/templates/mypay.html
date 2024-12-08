@@ -15,10 +15,32 @@
             margin: 0;
             background-color: #f4f4f9;
         }
+        .navbar {
+            width: 100%;
+            background-color: #333;
+            padding: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            color: #fff;
+            display: flex;
+            align-items: center;
+        }
+        .navbar .arrow-back {
+            text-decoration: none;
+            color: #fff;
+            font-size: 1.5em;
+            margin-right: 20px;
+        }
+        .navbar h1 {
+            margin: 0;
+            font-size: 1.2em;
+        }
         .container {
+            margin-top: 60px; /* Adjust for navbar height */
             border: 2px solid #000;
             padding: 20px;
-            width: 600px; /* Increased width for more space */
+            width: 600px;
             box-sizing: border-box;
             background-color: #fff;
         }
@@ -27,7 +49,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            gap: 20px; /* Space between balance and transact button */
+            gap: 20px;
         }
         .phone-balance {
             display: flex;
@@ -63,7 +85,7 @@
             border: 1px solid #000;
             padding: 10px;
             margin-top: 20px;
-            text-align: left; /* Aligns text to the left */
+            text-align: left;
         }
         .transaction-history h3 {
             margin: 0 0 10px;
@@ -82,13 +104,13 @@
             flex: 1;
             text-align: center;
         }
-        /* Optional: Add hover effects */
-        .transact-button:hover {
-            background-color: #d0d0d0;
-        }
     </style>
 </head>
 <body>
+    <div class="navbar">
+        <a href="{% url 'homepage' %}" class="arrow-back">←</a>
+        <h1>MyPay</h1>
+    </div>
     <div class="container">
         <h1 style="text-align: left;">MyPay</h1>
         <div class="header">

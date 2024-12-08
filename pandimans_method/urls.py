@@ -22,10 +22,11 @@ from pandimans_method import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    #path('', views.home, name='home'),
+    path('', views.homepage, name='homepage'),
     path('', views.login_view, name='login'),
     path('register/', views.register, name='register'),
     path('yellow/', include('yellow.urls')),
     path('red/', include('red.urls')),  # Include URLs from the 'red' app
-
+    path('green/', include('green.urls')), 
+    path('blue/', include('blue.urls')), 
 ]
