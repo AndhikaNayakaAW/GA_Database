@@ -48,11 +48,11 @@
     </div>
     <div class="nav-links">
         <a href="green/homepage.html">Homepage</a>
-        <a href="red/mypay.html">MyPay</a>
+        <a href="{% url 'red:mypay' %}">MyPay</a>
         <a href="myorder.html">My Order (View Service Booking)</a>
         <a href="blue/voucherpurchase.html">Discount</a>
         <a href="user-profile.html">Profile</a>
-        <a href="login.html">Logout</a>
+        <a href="{% url 'yellow:logout' %}">Logout</a>
       </div>
   </div>
 </body>

@@ -9,7 +9,7 @@ app_name = 'yellow'
 
 urlpatterns = [
     path('iflogin/', views.iflogin_view, name='iflogin'),
-    path('logout/', LogoutView.as_view(next_page='/yellow/iflogin/'), name='logout'),
+    path('logout/', views.logout_view, name='logout'),
     path('homepage/', homepage_view, name='homepage'),
     path('role_selection/', views.role_selection_view, name='role_selection'), 
     path('user_register/', views.user_register_view, name='user_register'),  

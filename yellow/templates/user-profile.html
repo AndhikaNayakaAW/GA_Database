@@ -64,6 +64,7 @@
   </style>
 </head>
 <body>
+  {% include 'user_navbar.html' %}
   <div class="container">
     <!-- Profile Picture -->
     <div class="profile-picture">👤</div>
@@ -73,10 +74,11 @@
 
     <!-- Profile Details -->
     <div class="info">
-      <div class="info-item"><strong>Name:</strong> John Doe</div>
-      <div class="info-item"><strong>Phone Number:</strong> +1 (555) 123-4567</div>
-      <div class="info-item"><strong>Birth Date:</strong> Jan 1, 1990</div>
-      <div class="info-item"><strong>Address:</strong> 123 Main St, Hometown, USA</div>
+      <div class="info-item"><strong>Name:</strong> {{ name }}</div>
+      <div class="info-item"><strong>Phone Number:</strong> {{ phone_number }}</div>
+      <div class="info-item"><strong>Birth Date:</strong> {{ birth_date }}</div>
+      <div class="info-item"><strong>Address:</strong> {{ address }}</div>
+    </div>
     </div>
   </div>
 </body>

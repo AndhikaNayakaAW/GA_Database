@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect, JsonResponse
 from uuid import uuid4
 from datetime import datetime
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
 
 def iflogin_view(request):
     """
@@ -109,22 +110,26 @@ def user_register_view(request):
 
 def worker_register_view(request):
     """
-    Validates phone number and bank account uniqueness, then registers a new worker.
+    Handle the worker registration process and redirect to login page upon success.
     """
     if request.method == 'POST':
+        # Retrieve form data
         phone_number = request.POST.get('phoneNum')
         bank_name = request.POST.get('bankName')
         acc_number = request.POST.get('accNumber')
 
+        # Check phone number and bank account uniqueness
         if not check_phone_uniqueness(phone_number):
-            return JsonResponse({'message': f'Phone number {phone_number} is already registered.', 'success': False})
-
-        if not check_bank_account_uniqueness(bank_name, acc_number):
-            return JsonResponse({
-                'message': f'Bank name "{bank_name}" and account number "{acc_number}" combination is already registered.',
-                'success': False
+            return render(request, 'worker_register.html', {
+                'messages': [f'Phone number {phone_number} is already registered.']
             })
 
+        if not check_bank_account_uniqueness(bank_name, acc_number):
+            return render(request, 'worker_register.html', {
+                'messages': [f'Bank name "{bank_name}" and account number "{acc_number}" combination is already registered.']
+            })
+
+        # Additional worker data
         name = request.POST.get('name')
         sex = request.POST.get('sex')
         pwd = request.POST.get('pwd')
@@ -133,21 +138,27 @@ def worker_register_view(request):
         npwp = request.POST.get('npwp')
         pic_url = request.POST.get('picUrl')
 
+        # Insert into database
         with connection.cursor() as cursor:
-            user_id = str(uuid4())
+            user_id = str(uuid4())  # Generate unique user ID
+            # Insert into "USER" table
             cursor.execute("""
-                INSERT INTO "USER" (id, name, sex, phonenum, pwd, dob, address, mypaybalance)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, [user_id, name, sex, phone_number, pwd, dob, address, 0.00])
+                INSERT INTO "USER" (Name, Pwd, Sex, PhoneNum, DoB, Address, MyPayBalance)
+                VALUES (%s, %s, %s, %s, %s, %s, 0)
+            """, [name, pwd, sex, phone_number, dob, address])
 
+            # Insert into "worker" table
             cursor.execute("""
                 INSERT INTO "WORKER" (id, bankname, accnumber, npwp, picurl, rate, totalfinishorder)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, [user_id, bank_name, acc_number, npwp, pic_url, 0.0, 0])
 
-        return JsonResponse({'message': 'Worker registered successfully!', 'success': True})
+        # Redirect to login page with success message
+        return redirect('yellow:iflogin')
 
-    return JsonResponse({'message': 'Invalid request method', 'success': False})
+    # Render the worker registration form for GET requests
+    return render(request, 'worker_register.html')
+
 
 
 # Helper Functions
@@ -166,9 +177,9 @@ def check_bank_account_uniqueness(bank_name, acc_number):
     """
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT 1 FROM \"WORKER\" WHERE bankname = %s AND accnumber = %s",
-            [bank_name, acc_number]
-        )
+    'SELECT 1 FROM "worker" WHERE bankname = %s AND accnumber = %s',
+    [bank_name, acc_number]
+)
         result = cursor.fetchone()
     return result is None
 
@@ -189,3 +200,40 @@ def role_selection_view(request):
 
     # Render the role selection page for GET requests
     return render(request, 'role_selection.html')
+
+def logout_view(request):
+    """
+    Handle the logout functionality.
+    """
+    # Clear the session data
+    logout(request)
+    # Redirect to the login page
+    return redirect('yellow:iflogin')
+
+def user_profile_view(request):
+    if not request.session.get('is_authenticated'):
+        return redirect('yellow:iflogin')  # User must be logged in
+
+    user_id = request.session.get('user_id')
+    
+    # Query the database for the user's details
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT name, phonenum, dob, address
+            FROM "USER"
+            WHERE id = %s
+        """, [user_id])
+        user_data = cursor.fetchone()
+    
+    if user_data:
+        # Map the tuple result to a context dictionary
+        context = {
+            'name': user_data[0],
+            'phone_number': user_data[1],
+            'birth_date': user_data[2],
+            'address': user_data[3],
+        }
+        return render(request, 'user-profile.html', context)
+    else:
+        # If no user found, handle it gracefully (e.g., redirect to login)
+        return redirect('yellow:iflogin')
