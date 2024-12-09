@@ -68,21 +68,25 @@ def add_testimonial(request, order_id):
 
 # Discount Page View
 def discount_page(request):
-    """
-    Display available vouchers for users.
-    """
     try:
+        # Fetch voucher data
         vouchers = execute_query("""
             SELECT Id, VoucherName, DiscountAmount, ExpiryDate
             FROM VOUCHER
             WHERE ExpiryDate >= CURRENT_DATE;
         """)
-        context = {'vouchers': vouchers}
+
+        # Add role and name to the context
+        context = {
+            'vouchers': vouchers,
+            'role': request.user.groups.first().name if request.user.groups.exists() else 'Guest',
+            'name': request.user.get_full_name() or request.user.username,
+        }
     except Exception as e:
         print(f"Error fetching vouchers: {e}")
         context = {'vouchers': [], 'error_message': 'Unable to load vouchers.'}
-    
-    return render(request, 'discount_page.html', context)
+
+    return render(request, 'voucherpurchase.html', context)
 
 # Purchase Voucher
 @csrf_exempt
@@ -131,3 +135,7 @@ def purchase_voucher(request, voucher_id):
             print(f"Error purchasing voucher: {e}")
             return JsonResponse({'status': 'error', 'message': 'An error occurred during voucher purchase.'})
     return HttpResponse("Invalid request method.", status=405)
+
+
+def testimonial_view(request):
+    return render(request, 'testimonial.html')

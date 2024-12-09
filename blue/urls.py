@@ -9,6 +9,7 @@ urlpatterns = [
     path('order/<int:order_id>/add-testimonial/', 
          views.add_testimonial, 
          name='add_testimonial'),
+     path('testimonial/', views.testimonial_view, name='testimonial'),
     
     # Discounts
     path('discounts/', 
