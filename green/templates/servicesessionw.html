@@ -2,200 +2,135 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subcategory Services Page - Worker View</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ subcategory_name }} - Worker View</title>
   <style>
-    /* Basic styling */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      color: #333;
-    }
-
-    .container {
-      width: 90%;
-      max-width: 800px;
-      margin: 20px auto;
-      border: 1px solid #ccc;
-      padding: 20px;
-      background-color: #fff;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 15px;
-    }
-
-    .header div {
-      font-weight: bold;
-      font-size: 18px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background-color: #f0f0f0;
-      text-align: center;
-    }
-
-    .description {
-      margin: 15px 0;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background-color: #f9f9f9;
-      text-align: center;
-    }
-
-    /* Service Session Options */
-    .session-section {
-      margin-top: 20px;
-    }
-
-    .session-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      border: 1px solid #ddd;
-      background-color: #f0f0f0;
-      margin-bottom: 10px;
-    }
-
-    /* Workers Section */
-    .worker-section {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background-color: #f9f9f9;
-    }
-
-    .worker-box {
-      width: 100px;
-      padding: 10px;
-      text-align: center;
-      border: 1px solid #ddd;
-      background-color: #fff;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-
-    /* Join Button */
-    .join-button {
-      display: block;
-      width: 100%;
-      margin: 20px auto;
-      padding: 10px;
-      background-color: #007BFF;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      text-align: center;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .join-button:hover {
-      background-color: #0069d9;
-    }
-
-    /* Testimonials Section */
-    .testimonial-section {
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background-color: #f0f0f0;
-    }
-
-    .testimonial-item {
-      border: 1px solid #ddd;
-      padding: 10px;
-      margin: 10px 0;
-      background-color: #fff;
-    }
-
-    .testimonial-item .header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 14px;
-      color: #666;
-    }
+    /* (Your existing CSS styles here) */
+    /* ... */
   </style>
 </head>
 <body>
   <div class="container">
     <!-- Header with Subcategory Name and Category -->
     <div class="header">
-      <div>Subcategory Name</div>
-      <div>Category</div>
+      <div>{{ subcategory_name }}</div>
+      <div>
+        {% for category in categories %}
+          {% if category.id == service_category_id %}
+            {{ category.name }}
+          {% endif %}
+        {% endfor %}
+      </div>
     </div>
 
     <!-- Description -->
-    <div class="description">This is the description of the subcategory service. It provides details on the services offered.</div>
+    <div class="description">{{ description }}</div>
 
     <!-- Service Session Options -->
     <section class="session-section">
       <h2>Service Session Options</h2>
-      <div class="session-item">
-        <span>Service Session 1</span>
-        <span>$50</span>
-      </div>
-      <div class="session-item">
-        <span>Service Session 2</span>
-        <span>$80</span>
-      </div>
+      {% for session in sessions %}
+        <div class="session-item">
+          <span>{{ session.0 }}</span> <!-- Session Name -->
+          <span>${{ session.1 }}</span> <!-- Price -->
+        </div>
+      {% empty %}
+        <p>No service sessions available.</p>
+      {% endfor %}
     </section>
 
     <!-- Workers Section -->
     <section class="worker-section">
-      <div class="worker-box">Worker Name 1</div>
-      <div class="worker-box">Worker Name 2</div>
-      <div class="worker-box">Worker Name 3</div>
-      <div class="worker-box">Worker Name 4</div>
+      {% for worker in workers %}
+        <div class="worker-box" onclick="window.location.href='{% url \'worker_profile\' worker.0 %}'">
+          {{ worker.1 }} <!-- Worker Name -->
+        </div>
+      {% empty %}
+        <p>No workers available.</p>
+      {% endfor %}
     </section>
 
     <!-- Join Button -->
-    <button class="join-button" onclick="joinService()">Join Service Category</button>
+    {% if not already_joined %}
+      <button class="join-button" id="join-button">Join Service Category</button>
+    {% endif %}
 
     <!-- Testimonials Section -->
     <section class="testimonial-section">
       <h2>Testimonials</h2>
-      <div class="testimonial-item">
-        <div class="header">
-          <span>User Name</span>
-          <span>Date</span>
+      {% for testimonial in testimonials %}
+        <div class="testimonial-item">
+          <div class="header">
+            <span>{{ testimonial.2 }}</span> <!-- User Name -->
+            <span>{{ testimonial.3 }}</span> <!-- Date -->
+          </div>
+          <p>{{ testimonial.0 }}</p> <!-- Feedback Text -->
+          <div class="header">
+            <span>{{ testimonial.2 }}</span> <!-- Worker Name (assuming it's the same as User Name) -->
+            <span>Rating: {{ testimonial.1 }}/5</span>
+          </div>
         </div>
-        <p>Feedback text goes here.</p>
-        <div class="header">
-          <span>Worker Name</span>
-          <span>Rating: 5/5</span>
-        </div>
-      </div>
-      <div class="testimonial-item">
-        <div class="header">
-          <span>User Name</span>
-          <span>Date</span>
-        </div>
-        <p>Another feedback text goes here.</p>
-        <div class="header">
-          <span>Worker Name</span>
-          <span>Rating: 4/5</span>
-        </div>
-      </div>
+      {% empty %}
+        <p>No testimonials available.</p>
+      {% endfor %}
     </section>
   </div>
 
+  <!-- CSRF Token for AJAX -->
+  <script>
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          // Does this cookie string begin with the name we want?
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+  </script>
+
   <script>
     // JavaScript function for joining the service category
-    function joinService() {
-      alert("You have joined the service category!");
-      // Here you could implement further functionality, like making a request to the backend to join the category
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+      const joinButton = document.getElementById('join-button');
+      if (joinButton) {
+        joinButton.addEventListener('click', function() {
+          fetch("{% url 'join_service_category' %}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({
+              'worker_id': '{{ worker_id }}',
+              'service_category_id': '{{ service_category_id }}',
+            }),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === 'success') {
+              alert(data.message);
+              // Reload the page to update the Join button
+              location.reload();
+            } else {
+              alert(data.message);
+            }
+          })
+          .catch((error) => {
+            console.error('Error:', error);
+            alert('An error occurred while joining the category.');
+          });
+        });
+      }
+    });
   </script>
 </body>
 </html>

@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 import uuid
 from datetime import datetime, date
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
 
 
 # Helper function to get a database connection
@@ -273,11 +274,9 @@ def book_service(request):
         return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
 # View User Service Bookings
+@login_required
 def view_user_bookings(request):
-    user_id = request.GET.get('user_id')  # Assuming user authentication
-
-    if not user_id:
-        return HttpResponse("User not authenticated.", status=401)
+    user_id = request.user.id  # Assuming user is authenticated and request.user represents the user
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -288,8 +287,9 @@ def view_user_bookings(request):
         search_input = request.GET.get('search', '').lower()
 
         query = """
-            SELECT SO.Id, SC.CategoryName, SSC.SubcategoryName, SO.TotalPrice,
-                   U.Name, OS.Status, SO.orderDate
+            SELECT SO.Id, SSC.SubcategoryName, SO.Session, SO.TotalPrice,
+                   U.Name AS WorkerName, OS.Status, SO.orderDate,
+                   (SELECT COUNT(*) FROM TESTIMONI WHERE serviceTrId = SO.Id) AS testimonial_count
             FROM TR_SERVICE_ORDER SO
             JOIN SERVICE_SUBCATEGORY SSC ON SO.subcategoryId = SSC.Id
             JOIN SERVICE_CATEGORY SC ON SSC.ServiceCategoryId = SC.Id
@@ -310,46 +310,56 @@ def view_user_bookings(request):
             query += " AND U.Name ILIKE %s"
             params.append(f"%{search_input}%")
 
+        query += " ORDER BY SO.orderDate DESC;"
+
         cursor.execute(query, tuple(params))
         orders = cursor.fetchall()
 
-        # Fetch actions based on status
+        # Fetch all subcategories for the filter dropdown
+        cursor.execute("""
+            SELECT SubcategoryName
+            FROM SERVICE_SUBCATEGORY
+            ORDER BY SubcategoryName;
+        """)
+        all_subcategories = cursor.fetchall()
+
+        # Organize orders
         order_list = []
         for order in orders:
-            order_id, category_name, subcategory_name, total_price, worker_name, status, order_date = order
-            action = None
-            if status in ['Waiting for Payment', 'Searching for Workers']:
-                action = {'type': 'cancel', 'url': reverse('cancel_order', args=[order_id])}
-            elif status == 'Completed':
-                # Check if testimonial exists
-                cursor.execute("""
-                    SELECT COUNT(*) FROM TESTIMONI WHERE serviceTrId = %s;
-                """, (order_id,))
-                testimonial_exists = cursor.fetchone()[0] > 0
-                if not testimonial_exists:
-                    action = {'type': 'testimonial', 'url': reverse('create_testimonial', args=[order_id])}
+            order_id, subcategory_name, session_name, total_price, worker_name, status, order_date, testimonial_count = order
+            has_testimonial = testimonial_count > 0
             order_list.append({
                 'order_id': order_id,
-                'category_name': category_name,
                 'subcategory_name': subcategory_name,
+                'session_name': session_name,
                 'total_price': total_price,
                 'worker_name': worker_name,
                 'status': status,
                 'order_date': order_date,
-                'action': action
+                'has_testimonial': has_testimonial,
             })
 
         context = {
-            'orders': order_list
+            'orders': order_list,
+            'all_subcategories': [ {'name': sub[0]} for sub in all_subcategories ],
+            'filter_subcategory': subcategory_filter,
+            'filter_status': status_filter,
+            'search_query': request.GET.get('search', ''),
         }
     except Exception as e:
         print(e)
-        context = {'orders': []}
+        context = {
+            'orders': [],
+            'all_subcategories': [],
+            'filter_subcategory': '',
+            'filter_status': '',
+            'search_query': '',
+        }
     finally:
         cursor.close()
         conn.close()
 
-    return render(request, 'view-user-service-bookings.html', context)
+    return render(request, 'view_user_service_bookings.html', context)
 
 # Cancel Order
 def cancel_order(request, order_id):
@@ -461,7 +471,9 @@ def is_user_worker(request):
 
 
 def subcategory_services_worker(request, subcategory_id):
-    # This view is similar to subcategory_services_user, but includes the join button logic for workers.
+    """
+    View to display the Subcategory Services Page for Workers.
+    """
     if not is_user_worker(request):
         return HttpResponse("You are not authorized to view this page.", status=403)
 
@@ -509,9 +521,10 @@ def subcategory_services_worker(request, subcategory_id):
         """, (subcategory_id,))
         sessions = cursor.fetchall()
 
+        # Get current worker's ID
+        worker_id = request.user.id  # Assuming the worker is logged in and `request.user` is the worker
+
         # Check if the current worker has already joined this category
-        # Assuming we have a worker_id from session or auth
-        worker_id = request.GET.get('worker_id')  # Placeholder, replace with actual worker identification
         cursor.execute("""
             SELECT COUNT(*)
             FROM WORKER_SERVICE_CATEGORY
@@ -528,6 +541,7 @@ def subcategory_services_worker(request, subcategory_id):
             'subcategory_id': subcategory_id,
             'service_category_id': service_category_id,
             'already_joined': already_joined,
+            'worker_id': worker_id,
         }
     except Exception as e:
         print(e)

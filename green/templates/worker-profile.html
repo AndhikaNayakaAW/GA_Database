@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Worker Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ name }}'s Profile</title>
   <style>
     /* Basic styling */
     * {
@@ -61,6 +61,28 @@
     .info-item {
       margin: 10px 0;
     }
+
+    /* Responsive Design */
+    @media (max-width: 500px) {
+      .container {
+        width: 95%;
+        padding: 15px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .info {
+        font-size: 14px;
+      }
+
+      .profile-picture {
+        width: 80px;
+        height: 80px;
+        font-size: 40px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -69,16 +91,16 @@
     <div class="profile-picture">👤</div>
 
     <!-- Profile Header -->
-    <h1>Worker's Profile</h1>
+    <h1>{{ name }}'s Profile</h1>
 
     <!-- Profile Details -->
     <div class="info">
-      <div class="info-item"><strong>Name:</strong> John Doe</div>
-      <div class="info-item"><strong>Rate:</strong> 8.5/10</div>
-      <div class="info-item"><strong>Finished Order Count:</strong> 150</div>
-      <div class="info-item"><strong>Phone Number:</strong> +1 (555) 123-4567</div>
-      <div class="info-item"><strong>Birth Date:</strong> Jan 1, 1990</div>
-      <div class="info-item"><strong>Address:</strong> 123 Main St, Hometown, USA</div>
+      <div class="info-item"><strong>Name:</strong> {{ name }}</div>
+      <div class="info-item"><strong>Rate:</strong> {{ rate }}/10</div>
+      <div class="info-item"><strong>Finished Order Count:</strong> {{ total_orders }}</div>
+      <div class="info-item"><strong>Phone Number:</strong> {{ phone }}</div>
+      <div class="info-item"><strong>Birth Date:</strong> {{ dob }}</div>
+      <div class="info-item"><strong>Address:</strong> {{ address }}</div>
     </div>
   </div>
 </body>

@@ -2,9 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>View User Service Bookings</title>
   <style>
+    /* (Your existing CSS styles here) */
+    /* ... */
+    /* Add your provided CSS styles */
     /* Basic Styling */
     * {
       box-sizing: border-box;
@@ -114,70 +117,79 @@
 
     <!-- Filter Section -->
     <div class="filter-section">
-      <select id="subcategoryFilter">
+      <select id="subcategoryFilter" name="subcategory">
         <option value="">Select Subcategory</option>
-        <option value="cleaning">Cleaning</option>
-        <option value="plumbing">Plumbing</option>
-        <option value="electrician">Electrician</option>
+        {% for subcategory in all_subcategories %}
+          <option value="{{ subcategory.name }}" {% if filter_subcategory == subcategory.name %}selected{% endif %}>{{ subcategory.name }}</option>
+        {% endfor %}
       </select>
 
-      <select id="orderStatusFilter">
+      <select id="orderStatusFilter" name="status">
         <option value="">Select Order Status</option>
-        <option value="waiting">Waiting for Payment</option>
-        <option value="searching">Searching for Workers</option>
-        <option value="completed">Order Completed</option>
+        <option value="Waiting for Payment" {% if filter_status == 'Waiting for Payment' %}selected{% endif %}>Waiting for Payment</option>
+        <option value="Searching for Workers" {% if filter_status == 'Searching for Workers' %}selected{% endif %}>Searching for Workers</option>
+        <option value="Completed" {% if filter_status == 'Completed' %}selected{% endif %}>Order Completed</option>
       </select>
 
-      <input type="text" id="searchInput" placeholder="Search by Worker Name">
+      <input type="text" id="searchInput" name="search" placeholder="Search by Worker Name" value="{{ search_query }}">
 
       <button onclick="filterOrders()">Search</button>
     </div>
 
     <!-- Order List -->
     <div class="order-list">
-      <!-- Example Orders -->
-      <div class="order-item">
-        <span>Cleaning</span>
-        <span>Bathroom Cleaning</span>
-        <span>$50</span>
-        <span>John Doe</span>
-        <span>Waiting for Payment</span>
-        <button class="action-button cancel-btn" onclick="cancelOrder(101)">Cancel</button>
-      </div>
-      <div class="order-item">
-        <span>Plumbing</span>
-        <span>Pipe Fixing</span>
-        <span>$80</span>
-        <span>Jane Smith</span>
-        <span>Order Completed</span>
-        <button class="action-button testimonial-btn" onclick="createTestimonial(102)">Create Testimonial</button>
-      </div>
-      <div class="order-item">
-        <span>Electrician</span>
-        <span>Light Installation</span>
-        <span>$100</span>
-        <span>Mark Brown</span>
-        <span>Searching for Workers</span>
-        <button class="action-button cancel-btn" onclick="cancelOrder(103)">Cancel</button>
-      </div>
+      {% for order in orders %}
+        <div class="order-item">
+          <span>{{ order.subcategory_name }}</span>
+          <span>{{ order.session_name }}</span>
+          <span>${{ order.total_price }}</span>
+          <span>{{ order.worker_name }}</span>
+          <span>{{ order.status }}</span>
+          {% if order.status in ['Waiting for Payment', 'Searching for Workers'] %}
+            <button class="action-button cancel-btn" onclick="cancelOrder('{{ order.order_id }}')">Cancel</button>
+          {% elif order.status == 'Completed' and not order.has_testimonial %}
+            <button class="action-button testimonial-btn" onclick="createTestimonial('{{ order.order_id }}')">Create Testimonial</button>
+          {% else %}
+            <span></span>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p>No service bookings found.</p>
+      {% endfor %}
     </div>
   </div>
 
   <script>
     // Function to handle cancel order
     function cancelOrder(orderId) {
-      const confirmCancel = confirm(`Are you sure you want to cancel order #${orderId}?`);
-      if (confirmCancel) {
-        alert(`Order #${orderId} has been cancelled.`);
-        // Implement backend logic here to cancel the order
+      if (confirm(`Are you sure you want to cancel order #${orderId}?`)) {
+        fetch(`/orders/cancel/${orderId}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+          },
+          body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert(data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('An error occurred while cancelling the order.');
+        });
       }
     }
 
     // Function to create a testimonial
     function createTestimonial(orderId) {
-      alert(`Redirecting to create testimonial for order #${orderId}.`);
-      // Redirect to a testimonial page
-      window.location.href = `create-testimonial.html?orderId=${orderId}`;
+      window.location.href = `/testimonials/create/?order_id=${orderId}`;
     }
 
     // Function to filter orders
@@ -186,9 +198,30 @@
       const status = document.getElementById('orderStatusFilter').value;
       const search = document.getElementById('searchInput').value.toLowerCase();
 
-      // Logic to filter orders dynamically (mock example)
-      alert(`Filtering orders by:\nSubcategory: ${subcategory}\nStatus: ${status}\nSearch: ${search}`);
-      // Implement backend filtering logic or dynamic display updates
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (subcategory) params.append('subcategory', subcategory);
+      if (status) params.append('status', status);
+      if (search) params.append('search', search);
+
+      // Redirect to the same page with query parameters
+      window.location.href = `/orders/view/?${params.toString()}`;
+    }
+
+    // Function to get CSRF token from cookies
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
     }
   </script>
 </body>
