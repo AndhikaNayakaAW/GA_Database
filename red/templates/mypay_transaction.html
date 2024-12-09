@@ -137,7 +137,7 @@
             <div class="form-row">
                 <label>Transaction Date</label>
                 <div class="field">
-                    <input type="date" id="transaction-date" name="transaction_date" value="{{ today|date:'Y-m-d' }}" readonly style="width: 100%;">
+                    <input type="date" id="transaction-date" name="transaction_date" style="width: 100%;" required>
                 </div>
             </div>
 
@@ -179,5 +179,15 @@
 
         <!-- Additional states here -->
     </div>
+
+    <script>
+        // Set the default date to the current date
+        document.addEventListener("DOMContentLoaded", function () {
+            const dateInput = document.getElementById('transaction-date');
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('value', today);
+        });
+    </script>
+    
 </body>
 </html>
