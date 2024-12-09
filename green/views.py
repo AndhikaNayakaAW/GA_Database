@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 import uuid
 from datetime import datetime, date
+from django.contrib.auth import logout
 
 
 # Helper function to get a database connection
@@ -579,3 +580,12 @@ def join_service_category(request):
             conn.close()
     else:
         return HttpResponse("Invalid request method.", status=405)
+    
+def logout_view(request):
+    """
+    Handle the logout functionality.
+    """
+    # Clear the session data
+    logout(request)
+    # Redirect to the login page
+    return redirect('yellow:login')

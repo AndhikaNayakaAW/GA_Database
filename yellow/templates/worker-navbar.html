@@ -43,16 +43,15 @@
 <body>
   <div class="navbar">
     <div class="role-name">
-      Role: Worker <!-- Replace dynamically with worker's role -->
-      <br>
-      Name: John Doe <!-- Replace dynamically with worker's name -->
+      Role: {{ role }} <br>
+      Name: {{ name }}
     </div>
     <div class="nav-links">
-      <a href="green/homepage.html">Homepage</a>
-      <a href="manage_jobs.html">Manage My Jobs</a>
+      <a href="{% url 'homepage' %}">Homepage</a>
+      <a href="service_jobs_status.html">Manage My Jobs</a>
       <a href="manage_order_status.html">Manage Order Status</a>
-      <a href="mypay.html">MyPay</a>
-      <a href="user-profile.html">Profile</a>
+      <a href="{% url 'red:mypay' %}">MyPay</a>
+      <a href="{% url 'yellow:user_profile' %}">Profile</a>
       <a href="{% url 'logout' %}">Logout</a>
     </div>
   </div>
