@@ -6,6 +6,7 @@ from uuid import uuid4
 from datetime import datetime
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
+from green.views import homepage as green_homepage
 
 def login_view(request):
     return render(request, 'login.html')
@@ -47,7 +48,7 @@ def iflogin_view(request):
             request.session['is_authenticated'] = True
 
             # Redirect to homepage
-            return redirect('yellow:homepage')
+            return redirect(green_homepage)
 
         else:
             # Login failed: show error message
