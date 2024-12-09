@@ -1,4 +1,4 @@
-# services/views.py
+
 
 import psycopg2
 from django.shortcuts import render, redirect
@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 import uuid
 from datetime import datetime, date
+
 
 # Helper function to get a database connection
 def get_db_connection():
@@ -25,23 +26,38 @@ def homepage(request):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Fetch all service categories
-        cursor.execute("SELECT Id, CategoryName FROM SERVICE_CATEGORY;")
-        categories = cursor.fetchall()
+        search_query = request.GET.get('search', '').lower()
 
-        # Fetch all subcategories
-        cursor.execute("SELECT Id, SubcategoryName, ServiceCategoryId FROM SERVICE_SUBCATEGORY;")
-        subcategories = cursor.fetchall()
+        if search_query:
+            # Filter categories and subcategories by search query
+            cursor.execute("""
+                SELECT c.Id, c.CategoryName, s.Id, s.SubcategoryName
+                FROM SERVICE_CATEGORY c
+                LEFT JOIN SERVICE_SUBCATEGORY s ON c.Id = s.ServiceCategoryId
+                WHERE LOWER(c.CategoryName) LIKE %s OR LOWER(s.SubcategoryName) LIKE %s
+                ORDER BY c.CategoryName, s.SubcategoryName;
+            """, (f"%{search_query}%", f"%{search_query}%"))
+        else:
+            cursor.execute("""
+                SELECT c.Id, c.CategoryName, s.Id, s.SubcategoryName
+                FROM SERVICE_CATEGORY c
+                LEFT JOIN SERVICE_SUBCATEGORY s ON c.Id = s.ServiceCategoryId
+                ORDER BY c.CategoryName, s.SubcategoryName;
+            """)
 
-        # Organize subcategories under their respective categories
-        category_dict = {cat[0]: {'name': cat[1], 'subcategories': []} for cat in categories}
-        for sub in subcategories:
-            category_id = sub[2]
-            if category_id in category_dict:
-                category_dict[category_id]['subcategories'].append({'id': sub[0], 'name': sub[1]})
+        results = cursor.fetchall()
+
+        # Organize results into a dictionary of categories and their subcategories
+        category_dict = {}
+        for cat_id, cat_name, sub_id, sub_name in results:
+            if cat_id not in category_dict:
+                category_dict[cat_id] = {'name': cat_name, 'subcategories': []}
+            if sub_id:
+                category_dict[cat_id]['subcategories'].append({'id': sub_id, 'name': sub_name})
 
         context = {
-            'categories': category_dict.values()
+            'categories': category_dict.values(),
+            'search_query': search_query
         }
     except Exception as e:
         print(e)
@@ -432,3 +448,134 @@ def create_testimonial(request, order_id):
         # Render testimonial form
         context = {'order_id': order_id}
         return render(request, 'create-testimonial.html', context)
+
+
+# Example of role determination:
+# In a real application, you'd use request.user.is_authenticated, request.user.is_worker, etc.
+# Here, we assume `request.session` or GET params for demonstration.
+def is_user_worker(request):
+    # Placeholder: Replace with actual logic
+    # e.g. return request.user.groups.filter(name='Workers').exists() in a Django auth system
+    return request.GET.get('is_worker', '0') == '1'
+
+
+def subcategory_services_worker(request, subcategory_id):
+    # This view is similar to subcategory_services_user, but includes the join button logic for workers.
+    if not is_user_worker(request):
+        return HttpResponse("You are not authorized to view this page.", status=403)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch subcategory details
+        cursor.execute("""
+            SELECT SubcategoryName, Description, ServiceCategoryId
+            FROM SERVICE_SUBCATEGORY
+            WHERE Id = %s;
+        """, (subcategory_id,))
+        subcategory = cursor.fetchone()
+
+        if not subcategory:
+            return HttpResponse("Subcategory not found.", status=404)
+
+        subcategory_name, description, service_category_id = subcategory
+
+        # Fetch workers in this service category
+        cursor.execute("""
+            SELECT W.Id, U.Name, W.Rate, W.TotalFinishOrder
+            FROM WORKER W
+            JOIN "USER" U ON W.Id = U.Id
+            JOIN WORKER_SERVICE_CATEGORY WSC ON W.Id = WSC.WorkerId
+            WHERE WSC.ServiceCategoryId = %s;
+        """, (service_category_id,))
+        workers = cursor.fetchall()
+
+        # Fetch testimonials for this subcategory
+        cursor.execute("""
+            SELECT T.Text, T.Rating, U.Name, T.date
+            FROM TESTIMONI T
+            JOIN TR_SERVICE_ORDER SO ON T.serviceTrId = SO.Id
+            JOIN "USER" U ON SO.customerId = U.Id
+            WHERE SO.subcategoryId = %s;
+        """, (subcategory_id,))
+        testimonials = cursor.fetchall()
+
+        # Fetch service sessions under this subcategory
+        cursor.execute("""
+            SELECT Session, Price
+            FROM SERVICE_SESSION
+            WHERE SubcategoryId = %s;
+        """, (subcategory_id,))
+        sessions = cursor.fetchall()
+
+        # Check if the current worker has already joined this category
+        # Assuming we have a worker_id from session or auth
+        worker_id = request.GET.get('worker_id')  # Placeholder, replace with actual worker identification
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM WORKER_SERVICE_CATEGORY
+            WHERE WorkerId = %s AND ServiceCategoryId = %s;
+        """, (worker_id, service_category_id))
+        already_joined = cursor.fetchone()[0] > 0
+
+        context = {
+            'subcategory_name': subcategory_name,
+            'description': description,
+            'workers': workers,
+            'testimonials': testimonials,
+            'sessions': sessions,
+            'subcategory_id': subcategory_id,
+            'service_category_id': service_category_id,
+            'already_joined': already_joined,
+        }
+    except Exception as e:
+        print(e)
+        context = {}
+    finally:
+        cursor.close()
+        conn.close()
+
+    return render(request, 'servicesessionw.html', context)
+
+
+@csrf_exempt
+def join_service_category(request):
+    # This endpoint allows a worker to join a service category
+    if request.method == 'POST':
+        worker_id = request.POST.get('worker_id')
+        service_category_id = request.POST.get('service_category_id')
+
+        if not all([worker_id, service_category_id]):
+            return JsonResponse({'status': 'error', 'message': 'Missing required fields.'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            # Check if the worker is already in the category
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM WORKER_SERVICE_CATEGORY
+                WHERE WorkerId = %s AND ServiceCategoryId = %s;
+            """, (worker_id, service_category_id))
+            count = cursor.fetchone()[0]
+
+            if count > 0:
+                return JsonResponse({'status': 'error', 'message': 'Worker already joined this category.'})
+
+            # Insert the new record
+            cursor.execute("""
+                INSERT INTO WORKER_SERVICE_CATEGORY (WorkerId, ServiceCategoryId)
+                VALUES (%s, %s);
+            """, (worker_id, service_category_id))
+            conn.commit()
+
+            return JsonResponse({'status': 'success', 'message': 'You have successfully joined the category.'})
+        except Exception as e:
+            print(e)
+            conn.rollback()
+            return JsonResponse({'status': 'error', 'message': 'An error occurred while joining the category.'})
+        finally:
+            cursor.close()
+            conn.close()
+    else:
+        return HttpResponse("Invalid request method.", status=405)

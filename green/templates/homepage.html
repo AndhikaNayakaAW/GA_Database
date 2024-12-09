@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Service Homepage</title>
   <style>
     /* CSS Styling */
@@ -30,6 +30,13 @@
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-section label {
+      padding: 8px;
+      font-size: 14px;
+      align-self: center;
     }
 
     .filter-section select,
@@ -70,10 +77,19 @@
       background-color: #fff;
       margin: 5px 0;
       cursor: pointer;
+      transition: background-color 0.3s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
     }
 
     .subcategory:hover {
       background-color: #e9e9e9;
+    }
+
+    /* Hidden class for filtering */
+    .hidden {
+      display: none;
     }
   </style>
 </head>
@@ -91,46 +107,95 @@
       <label for="categoryFilter">Category:</label>
       <select id="categoryFilter">
         <option value="">All Categories</option>
-        <!-- Dynamic options for categories go here -->
+        {% for category in categories %}
+          <option value="{{ category.name }}">{{ category.name }}</option>
+        {% endfor %}
       </select>
       
+      <label for="subcategorySearch">Subcategory:</label>
       <input type="text" id="subcategorySearch" placeholder="Subcategory Name">
       <button id="searchButton">Search</button>
     </div>
     
     <!-- Service Categories -->
-    <div class="categories">
-      <!-- Sample category and subcategories structure -->
-      <div class="category">
-        <div class="category-title">Service Category 1</div>
-        <div class="subcategory">Subcategory 1</div>
-        <div class="subcategory">Subcategory 2</div>
-        <div class="subcategory">Subcategory 3</div>
-      </div>
-      
-      <div class="category">
-        <div class="category-title">Service Category 2</div>
-        <div class="subcategory">Subcategory 1</div>
-        <div class="subcategory">Subcategory 2</div>
-        <div class="subcategory">Subcategory 3</div>
-      </div>
-      
-      <div class="category">
-        <div class="category-title">Service Category 3</div>
-        <div class="subcategory">Subcategory 1</div>
-        <div class="subcategory">Subcategory 2</div>
-        <div class="subcategory">Subcategory 3</div>
-      </div>
+    <div class="categories" id="categoriesContainer">
+      {% for category in categories %}
+        <div class="category" data-category="{{ category.name|lower }}">
+          <div class="category-title">{{ category.name }}</div>
+          {% for subcategory in category.subcategories %}
+            <a href="{% url 'subcategory_services_user' subcategory.id %}" class="subcategory" data-subcategory="{{ subcategory.name|lower }}">
+              {{ subcategory.name }}
+            </a>
+          {% endfor %}
+        </div>
+      {% empty %}
+        <p>No service categories available at the moment.</p>
+      {% endfor %}
     </div>
   </div>
 
   <script>
-    // JavaScript for dynamic functionalities (placeholder for actual functions)
+    // JavaScript for dynamic functionalities
     function searchCategories() {
-      // Code for filtering categories
+      const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
+      const subcategorySearch = document.getElementById('subcategorySearch').value.toLowerCase();
+      const categories = document.querySelectorAll('.category');
+
+      categories.forEach(category => {
+        const categoryName = category.getAttribute('data-category');
+        let categoryVisible = true;
+
+        // Filter by Category
+        if (categoryFilter && categoryName !== categoryFilter) {
+          categoryVisible = false;
+        }
+
+        // Filter by Subcategory
+        if (subcategorySearch) {
+          const subcategories = category.querySelectorAll('.subcategory');
+          let anySubcategoryVisible = false;
+          subcategories.forEach(sub => {
+            const subName = sub.getAttribute('data-subcategory');
+            if (subName.includes(subcategorySearch)) {
+              sub.classList.remove('hidden');
+              anySubcategoryVisible = true;
+            } else {
+              sub.classList.add('hidden');
+            }
+          });
+
+          if (!anySubcategoryVisible) {
+            categoryVisible = false;
+          }
+        }
+
+        // Toggle Category Visibility
+        if (categoryVisible) {
+          category.classList.remove('hidden');
+        } else {
+          category.classList.add('hidden');
+        }
+      });
     }
 
-    document.getElementById('searchButton').onclick = searchCategories;
+    document.getElementById('searchButton').addEventListener('click', searchCategories);
+
+    // Trigger search on Enter key press in the subcategory search input
+    document.getElementById('subcategorySearch').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchCategories();
+      }
+    });
+
+    // Optional: Reset filters when category selection changes
+    document.getElementById('categoryFilter').addEventListener('change', function() {
+      const subcategorySearch = document.getElementById('subcategorySearch');
+      if (!this.value) {
+        subcategorySearch.value = '';
+        searchCategories();
+      }
+    });
   </script>
 </body>
 </html>
