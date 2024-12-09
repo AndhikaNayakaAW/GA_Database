@@ -8,6 +8,7 @@ from django.contrib.auth.views import LogoutView
 app_name = 'yellow'
 
 urlpatterns = [
+    path('', views.login_view, name='login'),
     path('iflogin/', views.iflogin_view, name='iflogin'),
     path('logout/', views.logout_view, name='logout'),
     path('homepage/', homepage_view, name='homepage'),

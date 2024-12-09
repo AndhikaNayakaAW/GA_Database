@@ -7,6 +7,9 @@ from datetime import datetime
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 
+def login_view(request):
+    return render(request, 'login.html')
+
 def iflogin_view(request):
     """
     Handle login functionality and redirect to homepage upon successful login.
@@ -68,6 +71,8 @@ def homepage_view(request):
         'role': role,
         'name': user_name,
     }
+    
+    # Render the homepage template from the 'green' app
     return render(request, 'homepage.html', context)
 
 
@@ -208,7 +213,7 @@ def logout_view(request):
     # Clear the session data
     logout(request)
     # Redirect to the login page
-    return redirect('yellow:iflogin')
+    return redirect('yellow:login')
 
 def user_profile(request):
     if not request.session.get('is_authenticated'):
