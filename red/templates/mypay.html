@@ -233,7 +233,7 @@
                                 -Rp {{ txn.amount|floatformat:2|intcomma|cut:"-" }}
                             {% endif %}
                         </p>
-                        <p>{{ txn.timestamp|date:"Y-m-d H:i:s" }}</p>
+                        <p>{{ txn.timestamp|date:"Y-m-d" }} {{ txn.timestamp|time:"H:i:s" }}</p>
                         <p>{{ txn.transaction_type }}</p>
                     </div>
                     {% endfor %}

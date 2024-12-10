@@ -215,7 +215,7 @@ def mypay(request):
             'id': str(txn_id),
             'transaction_type': category,
             'amount': float(nominal),
-            'timestamp': date,
+            'timestamp': date.strftime('%Y-%m-%d %H:%M:%S'),
         })
 
     # If there's an error from POST request, include it in the context
