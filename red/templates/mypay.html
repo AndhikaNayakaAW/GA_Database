@@ -6,12 +6,11 @@
     <meta charset="UTF-8">
     <title>MyPay</title>
     <style>
+        /* [Existing CSS Styles] */
+
+        /* Common Styles */
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
             background-color: #f4f4f9;
         }
@@ -25,6 +24,7 @@
             color: #fff;
             display: flex;
             align-items: center;
+            z-index: 1000;
         }
         .navbar .arrow-back {
             text-decoration: none;
@@ -43,6 +43,13 @@
             width: 600px;
             box-sizing: border-box;
             background-color: #fff;
+            margin-left: auto;
+            margin-right: auto;
+            min-height: calc(100vh - 60px);
+        }
+        /* Main Payment Section */
+        .main-section h1 {
+            text-align: left;
         }
         .header {
             display: flex;
@@ -75,11 +82,9 @@
             cursor: pointer;
             background-color: #e0e0e0;
         }
-        .transact-button a {
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            height: 100%;
+        .transact-button p {
+            margin: 0;
+            cursor: pointer;
         }
         .transaction-history {
             border: 1px solid #000;
@@ -104,44 +109,307 @@
             flex: 1;
             text-align: center;
         }
+        /* Transaction Form Section */
+        .transaction-section {
+            display: none; /* Hidden by default */
+        }
+        .transaction-section .header {
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            padding: 20px;
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .form-row label {
+            font-weight: bold;
+            margin-right: 10px;
+            width: 150px;
+        }
+        .user-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .dropdown-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .dropdown {
+            width: 200px;
+            padding: 5px;
+            font-size: 14px;
+        }
+        .transaction-category-display {
+            border: 1px solid #000;
+            padding: 20px;
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        .transaction-category {
+            border: 1px solid #000;
+            padding: 20px;
+            display: none;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .submit-btn {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .submit-btn button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid #000;
+            background-color: #e0e0e0;
+        }
+        .submit-btn button:hover {
+            background-color: #d0d0d0;
+        }
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        /* Responsive Design */
+        @media (max-width: 650px) {
+            .container {
+                width: 90%;
+            }
+            .form-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .form-row label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            .dropdown {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Navbar -->
     <div class="navbar">
         <a href="{% url 'homepage' %}" class="arrow-back">←</a>
         <h1>MyPay</h1>
     </div>
+
     <div class="container">
-        <h1 style="text-align: left;">MyPay</h1>
-        <div class="header">
-            <div class="phone-balance">
-                <p>{{ phone_number }}</p>
-                <p>Rp {{ balance|floatformat:2|intcomma }}</p>
+        <!-- Main Payment Section -->
+        <div class="main-section">
+            <h1>MyPay</h1>
+            <div class="header">
+                <div class="phone-balance">
+                    <p>{{ phone_number }}</p>
+                    <p>Rp {{ balance|floatformat:2|intcomma }}</p>
+                </div>
+                <div class="transact-button" onclick="showTransactionSection()">
+                    <p>Transact</p>
+                </div>
             </div>
-            <div class="transact-button">
-                <a href="{% url 'red:mypay_transaction' %}"><p>Transact</p></a>
+            <div class="transaction-history">
+                <h3>Transaction History</h3>
+                {% if transactions %}
+                    {% for txn in transactions %}
+                    <div class="transaction-item">
+                        <p>
+                            {% if txn.amount > 0 %}
+                                +Rp {{ txn.amount|floatformat:2|intcomma }}
+                            {% else %}
+                                -Rp {{ txn.amount|floatformat:2|intcomma|cut:"-" }}
+                            {% endif %}
+                        </p>
+                        <p>{{ txn.timestamp|date:"Y-m-d H:i:s" }}</p>
+                        <p>{{ txn.transaction_type }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No transactions found.</p>
+                {% endif %}
             </div>
         </div>
-        <div class="transaction-history">
-            <h3>Transaction History</h3>
-            {% if transactions %}
-                {% for txn in transactions %}
-                <div class="transaction-item">
-                    <p>
-                        {% if txn.amount > 0 %}
-                            +Rp {{ txn.amount|floatformat:2|intcomma }}
-                        {% else %}
-                            -Rp {{ txn.amount|floatformat:2|intcomma|cut:"-" }}
-                        {% endif %}
-                    </p>
-                    <p>{{ txn.timestamp|date:"Y-m-d H:i:s" }}</p>
-                    <p>{{ txn.transaction_type }}</p>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p>No transactions found.</p>
+
+        <!-- Transaction Form Section -->
+        <div class="transaction-section" id="transaction-section">
+            <div class="header">MyPay Transaction</div>
+
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
             {% endif %}
+
+            <div class="form-section">
+                <div class="user-info">
+                    <div>{{ phone_number }}</div>
+                </div>
+
+                <div class="form-row">
+                    <label for="transaction-date">Transaction Date</label>
+                    <div class="field">
+                        <input type="date" id="transaction-date" name="transaction_date" style="width: 100%;" required>
+                    </div>
+                </div>
+
+                <div class="user-info">
+                    <div>MyPay Balance: Rp {{ balance|floatformat:2|intcomma }}</div>
+                </div>
+
+                <div class="dropdown-container">
+                    <label for="transaction-category">Transaction Category</label>
+                    <select id="transaction-category" name="transaction_category" class="dropdown" onchange="showFormState(this.value)">
+                        <option value="">Select Category</option>
+                        <option value="Top-Up">Top-Up</option>
+                        <option value="Service Payment">Service Payment</option>
+                        <option value="Transfer">Transfer</option>
+                        <option value="Withdrawal">Withdrawal</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="transaction-category-display" id="transaction-category-display">
+                Please select a transaction category to proceed.
+            </div>
+
+            <!-- Transaction Forms -->
+            <!-- Top-Up Form -->
+            <div class="transaction-category" id="state-Top-Up">
+                <h3>Top-Up MyPay</h3>
+                <form method="POST" action="{% url 'red:mypay' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="transaction_category" value="Top-Up">
+                    <div class="form-row">
+                        <label for="top-up-amount">Amount:</label>
+                        <input type="number" id="top-up-amount" name="amount" placeholder="Enter amount" required min="1" style="width: 200px;">
+                    </div>
+                    <div class="submit-btn">
+                        <button type="submit">Top Up</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Service Payment Form -->
+            <div class="transaction-category" id="state-Service Payment">
+                <h3>Service Payment</h3>
+                <form method="POST" action="{% url 'red:mypay' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="transaction_category" value="Service Payment">
+                    <div class="form-row">
+                        <label for="order_id">Select Order:</label>
+                        <select id="order_id" name="order_id" required style="width: 210px;">
+                            <option value="">Select Order</option>
+                            {% for session in service_sessions %}
+                                <option value="{{ session.service_booking_id }}">{{ session.service_name }} - Rp {{ session.price|floatformat:2|intcomma }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="submit-btn">
+                        <button type="submit">Pay Service</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Transfer Form -->
+            <div class="transaction-category" id="state-Transfer">
+                <h3>Transfer Funds</h3>
+                <form method="POST" action="{% url 'red:mypay' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="transaction_category" value="Transfer">
+                    <div class="form-row">
+                        <label for="recipient_phone">Recipient Number:</label>
+                        <input type="text" id="recipient_phone" name="recipient_phone" placeholder="Enter phone number" required style="width: 200px;">
+                    </div>
+                    <div class="form-row">
+                        <label for="transfer_amount">Amount:</label>
+                        <input type="number" id="transfer_amount" name="transfer_amount" placeholder="Enter amount" required min="1" style="width: 200px;">
+                    </div>
+                    <div class="submit-btn">
+                        <button type="submit">Transfer</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Withdrawal Form -->
+            <div class="transaction-category" id="state-Withdrawal">
+                <h3>Withdraw Funds</h3>
+                <form method="POST" action="{% url 'red:mypay' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="transaction_category" value="Withdrawal">
+                    <div class="form-row">
+                        <label for="withdrawal_amount">Amount:</label>
+                        <input type="number" id="withdrawal_amount" name="withdrawal_amount" placeholder="Enter amount" required min="1" style="width: 200px;">
+                    </div>
+                    <div class="submit-btn">
+                        <button type="submit">Withdraw</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="submit-btn">
+                <button onclick="hideTransactionSection()">Back</button>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Function to show the transaction section
+        function showTransactionSection() {
+            document.querySelector('.main-section').style.display = 'none';
+            document.getElementById('transaction-section').style.display = 'block';
+            // Set default date
+            const dateInput = document.getElementById('transaction-date');
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.setAttribute('value', today);
+        }
+
+        // Function to hide the transaction section and show the main section
+        function hideTransactionSection() {
+            document.querySelector('.main-section').style.display = 'block';
+            document.getElementById('transaction-section').style.display = 'none';
+            // Reset transaction form
+            document.getElementById('transaction-category').value = '';
+            document.getElementById('transaction-category-display').innerText = 'Please select a transaction category to proceed.';
+            const categories = document.querySelectorAll('.transaction-category');
+            categories.forEach(function(category) {
+                category.style.display = 'none';
+            });
+        }
+
+        // Function to display the appropriate form based on the selected category
+        function showFormState(value) {
+            const display = document.getElementById('transaction-category-display');
+            const categories = document.querySelectorAll('.transaction-category');
+            categories.forEach(function(category) {
+                category.style.display = 'none';
+            });
+            if (value) {
+                document.getElementById(`state-${value}`).style.display = 'block';
+                display.innerText = `You have selected: ${value}`;
+            } else {
+                display.innerText = 'Please select a transaction category to proceed.';
+            }
+        }
+
+        // Set the default date on page load
+        document.addEventListener("DOMContentLoaded", function () {
+            const dateInput = document.getElementById('transaction-date');
+            if (dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dateInput.setAttribute('value', today);
+            }
+        });
+    </script>
 </body>
 </html>
