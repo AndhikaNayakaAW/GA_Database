@@ -32,6 +32,8 @@ def order_status(request):
     return render(request, 'access_denied.html', status=403)
 
 
+from decimal import Decimal
+
 def mypay(request):
     """
     Handles displaying MyPay balance, transaction history, and processing transactions.
@@ -53,10 +55,10 @@ def mypay(request):
                 row = cursor.fetchone()
                 if not row:
                     raise Exception("User not found")
-                balance = row[0] if row[0] else 0.0
+                balance = Decimal(row[0]) if row[0] else Decimal('0.0')
 
                 if transaction_category == 'Top-Up':
-                    amount = float(request.POST.get('amount', 0))
+                    amount = Decimal(request.POST.get('amount', '0'))
                     if amount <= 0:
                         raise Exception("Invalid top-up amount")
 
@@ -87,7 +89,7 @@ def mypay(request):
                     order = cursor.fetchone()
                     if not order:
                         raise Exception("Order not found or not in payable state")
-                    service_price = float(order[1])
+                    service_price = Decimal(order[1])
 
                     if balance < service_price:
                         raise Exception("Insufficient balance for service payment")
@@ -112,7 +114,7 @@ def mypay(request):
 
                 elif transaction_category == 'Transfer':
                     recipient_phone = request.POST.get('recipient_phone')
-                    transfer_amount = float(request.POST.get('transfer_amount', 0))
+                    transfer_amount = Decimal(request.POST.get('transfer_amount', '0'))
                     if not recipient_phone or transfer_amount <= 0:
                         raise Exception("Invalid recipient phone or transfer amount")
 
@@ -131,7 +133,7 @@ def mypay(request):
                     rec_balance_row = cursor.fetchone()
                     if not rec_balance_row:
                         raise Exception("Recipient user not found")
-                    recipient_balance = rec_balance_row[0] if rec_balance_row[0] else 0.0
+                    recipient_balance = Decimal(rec_balance_row[0]) if rec_balance_row[0] else Decimal('0.0')
 
                     # Update sender's balance
                     new_balance = balance - transfer_amount
@@ -156,7 +158,7 @@ def mypay(request):
                     """, [uuid4(), recipient_id, transfer_amount])
 
                 elif transaction_category == 'Withdrawal':
-                    withdrawal_amount = float(request.POST.get('withdrawal_amount', 0))
+                    withdrawal_amount = Decimal(request.POST.get('withdrawal_amount', '0'))
                     if withdrawal_amount <= 0:
                         raise Exception("Invalid withdrawal amount")
                     if balance < withdrawal_amount:
@@ -189,7 +191,7 @@ def mypay(request):
             # Fetch MyPay balance from "USER"
             cursor.execute('SELECT MyPayBalance FROM "USER" WHERE Id = %s', [user_id])
             row = cursor.fetchone()
-            balance = row[0] if row else 0.0
+            balance = Decimal(row[0]) if row else Decimal('0.0')
 
             # Fetch Transactions from TR_MYPAY joined with TR_MYPAY_CATEGORY
             cursor.execute("""
@@ -204,7 +206,7 @@ def mypay(request):
         return render(request, 'mypay.html', {
             'error': f"Error fetching data: {str(e)}",
             'phone_number': request.session.get('user_phone'),
-            'balance': 0.0,
+            'balance': Decimal('0.0'),
             'transactions': [],
         })
 
@@ -254,7 +256,6 @@ def mypay(request):
     context['service_sessions'] = service_sessions_list
 
     return render(request, 'mypay.html', context)
-
 
 def service_job_status(request):
     """
