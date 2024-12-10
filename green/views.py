@@ -56,10 +56,13 @@ def homepage(request):
                 category_dict[cat_id] = {'name': cat_name, 'subcategories': []}
             if sub_id:
                 category_dict[cat_id]['subcategories'].append({'id': sub_id, 'name': sub_name})
-
+        user_name = request.session.get('user_name', 'Unknown User')
+        role = request.session.get('role', 'user')  # Default role is 'user'
         context = {
             'categories': category_dict.values(),
-            'search_query': search_query
+            'search_query': search_query,
+            'role': role,
+            'name': user_name,
         }
     except Exception as e:
         print(e)
@@ -67,7 +70,7 @@ def homepage(request):
     finally:
         cursor.close()
         conn.close()
-
+    
     return render(request, 'homepage.html', context)
 
 # Subcategory Services Page for Users
@@ -115,7 +118,9 @@ def subcategory_services_user(request, subcategory_id):
             WHERE SubcategoryId = %s;
         """, (subcategory_id,))
         sessions = cursor.fetchall()
-
+        
+        user_name = request.session.get('user_name', 'Unknown User')
+        role = request.session.get('role', 'user')  # Default role is 'user'
         context = {
             'subcategory_name': subcategory_name,
             'description': description,
@@ -123,6 +128,8 @@ def subcategory_services_user(request, subcategory_id):
             'testimonials': testimonials,
             'sessions': sessions,
             'subcategory_id': subcategory_id,
+            'role': role,
+            'name': user_name,
         }
     except Exception as e:
         print(e)
@@ -137,6 +144,7 @@ def subcategory_services_user(request, subcategory_id):
 def worker_profile(request, worker_id):
     conn = get_db_connection()
     cursor = conn.cursor()
+    
     try:
         cursor.execute("""
             SELECT U.Name, W.Rate, W.TotalFinishOrder, U.PhoneNum, U.DoB, U.Address
@@ -158,6 +166,7 @@ def worker_profile(request, worker_id):
             'phone': phone,
             'dob': dob,
             'address': address,
+            'worker_id': worker_id
         }
     except Exception as e:
         print(e)
