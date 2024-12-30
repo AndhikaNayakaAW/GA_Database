@@ -7,7 +7,7 @@
     <style>
         body {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             font-family: Arial, sans-serif;
             margin: 0;
@@ -20,10 +20,11 @@
             justify-content: space-between;
             border: 1px solid #000;
             padding: 20px;
+            margin-top: 20px;
         }
 
         .section {
-            width: 48%;
+            width: 100%;
             border: 1px solid #000;
             padding: 10px;
             box-sizing: border-box;
@@ -42,20 +43,21 @@
         }
 
         .form-group label {
-            width: 130px;
+            width: 150px;
         }
 
-        .form-group input[type="text"],
-        .form-group input[type="password"],
+        .form-group input,
         .form-group select {
-            width: calc(100% - 140px);
+            flex: 1;
             padding: 5px;
             border: 1px solid #000;
+            border-radius: 4px;
         }
 
-        .radio-group {
-            display: flex;
-            gap: 10px;
+        .form-group input[readonly] {
+            background-color: #f5f5f5;
+            color: #888;
+            cursor: not-allowed;
         }
 
         .button-group {
@@ -70,103 +72,55 @@
             cursor: pointer;
         }
 
-        .image-box {
-            border: 1px solid #000;
-            width: 80px;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-left: auto;
-            font-size: 12px;
-        }
-
-        .job-category {
-            margin-left: 10px;
-            font-size: 12px;
+        .button-group button:hover {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body>
+    <!-- Include the navbar -->
+    {% include 'worker-navbar.html' %}
+
     <div class="container">
         <div class="section">
             <h2>Worker Information</h2>
-            <div class="form-group"><label>Name:</label><span>John Doe</span></div>
-            <div class="form-group"><label>Sex:</label><span>Male</span></div>
-            <div class="form-group"><label>Phone Number:</label><span>+123456789</span></div>
-            <div class="form-group"><label>Birth Date:</label><span>01/01/1990</span></div>
-            <div class="form-group"><label>Address:</label><span>123 Main St</span></div>
-            <div class="form-group"><label>MyPay Balance:</label><span>$500.00</span></div>
-            <div class="form-group"><label>Bank Name:</label><span>ABC Bank</span></div>
-            <div class="form-group"><label>Account Number:</label><span>12345678</span></div>
-            <div class="form-group"><label>NPWP:</label><span>1234567890</span></div>
-            <div class="form-group"><label>Rate:</label><span>$15/hour</span></div>
-            <div class="form-group"><label>Completed Orders Count:</label><span>10</span></div>
-            <div class="form-group"><label>Job Category:</label>
-                <div class="job-category">
-                    <p>1. Job Category 1</p>
-                    <p>2. Job Category 2</p>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="image-box">Image</div>
-            </div>
-            <div class="button-group">
-                <button type="button">Update</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Register Worker</h2>
-            <form action="#" method="post">
+            <form method="POST" action="{% url 'yellow:update_worker_profile' %}">
+                {% csrf_token %}
+                <div class="form-group"><label>Name:</label><input type="text" name="name" value="{{ worker.name }}"></div>
+                <div class="form-group"><label>Sex:</label><input type="text" name="sex" value="{{ worker.sex }}"></div>
+                <div class="form-group"><label>Phone Number:</label><input type="text" name="phone_number" value="{{ worker.phone_number }}"></div>
+                <div class="form-group"><label>Birth Date:</label><input type="date" name="dob" value="{{ worker.dob }}"></div>
+                <div class="form-group"><label>Address:</label><input type="text" name="address" value="{{ worker.address }}"></div>
                 <div class="form-group">
-                    <label for="name">Name:</label>
-                    <input type="text" id="name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label>Sex:</label>
-                    <div class="radio-group">
-                        <label><input type="radio" name="sex" value="F"> F</label>
-                        <label><input type="radio" name="sex" value="M"> M</label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number:</label>
-                    <input type="text" id="phone" name="phone" required>
-                </div>
-                <div class="form-group">
-                    <label for="birth_date">Birth Date:</label>
-                    <input type="text" id="birth_date" name="birth_date" required>
-                </div>
-                <div class="form-group">
-                    <label for="address">Address:</label>
-                    <input type="text" id="address" name="address" required>
+                    <label>MyPay Balance:</label>
+                    <input type="text" value="{{ worker.mypay_balance }}" readonly>
                 </div>
                 <div class="form-group">
                     <label for="bank_name">Bank Name:</label>
-                    <select id="bank_name" name="bank_name">
-                        <option value="ABC Bank">ABC Bank</option>
-                        <option value="XYZ Bank">XYZ Bank</option>
+                    <select id="bank_name" name="bank_name" required>
+                        <option value="GoPay" {% if worker.bank_name == "GoPay" %}selected{% endif %}>GoPay</option>
+                        <option value="OVO" {% if worker.bank_name == "OVO" %}selected{% endif %}>OVO</option>
+                        <option value="Virtual Account BCA" {% if worker.bank_name == "Virtual Account BCA" %}selected{% endif %}>Virtual Account BCA</option>
+                        <option value="Virtual Account BNI" {% if worker.bank_name == "Virtual Account BNI" %}selected{% endif %}>Virtual Account BNI</option>
+                        <option value="Virtual Account Mandiri" {% if worker.bank_name == "Virtual Account Mandiri" %}selected{% endif %}>Virtual Account Mandiri</option>
                     </select>
                 </div>
+                <div class="form-group"><label>Account Number:</label><input type="text" name="acc_number" value="{{ worker.acc_number }}" required></div>
+                <div class="form-group"><label>NPWP:</label><input type="text" name="npwp" value="{{ worker.npwp }}"></div>
                 <div class="form-group">
-                    <label for="account_number">Account Number:</label>
-                    <input type="text" id="account_number" name="account_number" required>
+                    <label>Rate:</label>
+                    <input type="text" value="{{ worker.rate }}" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="npwp">NPWP:</label>
-                    <input type="text" id="npwp" name="npwp" required>
+                    <label>Completed Orders Count:</label>
+                    <input type="text" value="{{ worker.completed_orders_count }}" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="image_url">Image URL:</label>
-                    <input type="text" id="image_url" name="image_url">
+                    <label>Job Category:</label>
+                    <textarea rows="3" readonly>{% for category in worker.job_categories %}{{ category }}{% if not forloop.last %}, {% endif %}{% endfor %}</textarea>
                 </div>
                 <div class="button-group">
-                    <button type="submit">Register</button>
+                    <button type="submit">Save Changes</button>
                 </div>
             </form>
         </div>

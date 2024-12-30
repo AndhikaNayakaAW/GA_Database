@@ -146,16 +146,16 @@ def worker_register_view(request):
 
         # Insert into database
         with connection.cursor() as cursor:
-            user_id = str(uuid4())  # Generate unique user ID
+            user_id = str(uuid4())  
             # Insert into "USER" table
             cursor.execute("""
-                INSERT INTO "USER" (Name, Pwd, Sex, PhoneNum, DoB, Address, MyPayBalance)
-                VALUES (%s, %s, %s, %s, %s, %s, 0)
-            """, [name, pwd, sex, phone_number, dob, address])
+              INSERT INTO "USER" (id, Name, Pwd, Sex, PhoneNum, DoB, Address, MyPayBalance)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+""", [user_id, name, pwd, sex, phone_number, dob, address, 0])
 
             # Insert into "worker" table
             cursor.execute("""
-                INSERT INTO "WORKER" (id, bankname, accnumber, npwp, picurl, rate, totalfinishorder)
+                INSERT INTO "worker" (id, bankname, accnumber, npwp, picurl, rate, totalfinishorder)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, [user_id, bank_name, acc_number, npwp, pic_url, 0.0, 0])
 
@@ -216,30 +216,148 @@ def logout_view(request):
     # Redirect to the login page
     return redirect('yellow:login')
 
-def user_profile(request):
+def user_profile_view(request):
+    """
+    Render the user's profile page with their details fetched from the database.
+    """
     if not request.session.get('is_authenticated'):
-        return redirect('yellow:iflogin')  # User must be logged in
+        return redirect('yellow:iflogin')  # Ensure user is authenticated
 
-    user_id = request.session.get('user_id')
-    
-    # Query the database for the user's details
+    user_id = request.session.get('user_id')  # Get the user ID from the session
+
+    # Query the USER table for the user's data
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT name, phonenum, dob, address
+            SELECT Name, Pwd, Sex, PhoneNum, DoB, Address, MyPayBalance
             FROM "USER"
             WHERE id = %s
         """, [user_id])
         user_data = cursor.fetchone()
-    
+
     if user_data:
-        # Map the tuple result to a context dictionary
+        # Map the database results to a context dictionary
         context = {
-            'name': user_data[0],
-            'phone_number': user_data[1],
-            'birth_date': user_data[2],
-            'address': user_data[3],
+            'user': {
+                'name': user_data[0],
+                'sex': user_data[2],
+                'phone': user_data[3],
+                'birth_date': user_data[4],
+                'address': user_data[5],
+                'mypay_balance': user_data[6],  # Read-only
+            },
+            'role': request.session.get('role', 'user'),  # Default to 'user'
         }
-        return render(request, 'user-profile.html', context)
+
+        return render(request, 'profile_user.html', context)
     else:
-        # If no user found, handle it gracefully (e.g., redirect to login)
+        # If no data is found, redirect to the login page
         return redirect('yellow:iflogin')
+
+
+
+def update_user_profile(request):
+    """
+    Handle user profile updates while excluding MyPay Balance and User Level.
+    """
+    if request.method == 'POST':
+        user_id = request.session.get('user_id')  # Retrieve user's ID from the session
+        name = request.POST.get('name')
+        password = request.POST.get('password')
+        sex = request.POST.get('sex')
+        phone = request.POST.get('phone')
+        birth_date = request.POST.get('birth_date')
+        address = request.POST.get('address')
+
+        # Update user information in the database
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE "USER"
+                SET Name = %s, Pwd = %s, Sex = %s, PhoneNum = %s, DoB = %s, Address = %s
+                WHERE id = %s
+            """, [name, password, sex, phone, birth_date, address, user_id])
+
+        return redirect('yellow:user_profile')  # Redirect back to the profile page
+
+    return redirect('yellow:user_profile')  # Redirect if method is not POST
+
+
+def profile_worker_view(request):
+    """
+    Render the worker's profile page with their details fetched from the database.
+    """
+    if not request.session.get('is_authenticated'):
+        return redirect('yellow:iflogin')  # Ensure user is authenticated
+
+    user_id = request.session.get('user_id')  # Get the user ID from the session
+    
+    # Query the USER and WORKER tables for the worker's data
+    with connection.cursor() as cursor:
+        # Fetch user details from USER table
+        cursor.execute("""
+            SELECT Name, Pwd, Sex, PhoneNum, DoB, Address, MyPayBalance
+            FROM "USER"
+            WHERE id = %s
+        """, [user_id])
+        user_data = cursor.fetchone()
+
+        # Fetch worker-specific details from WORKER table
+        cursor.execute("""
+            SELECT bankname, accnumber, npwp, picurl, rate, totalfinishorder
+            FROM "worker"
+            WHERE id = %s
+        """, [user_id])
+        worker_data = cursor.fetchone()
+
+    if user_data and worker_data:
+        # Map the database results to a context dictionary
+        context = {
+            'worker': {
+                'name': user_data[0],
+                'sex': user_data[2],
+                'phone_number': user_data[3],
+                'dob': user_data[4],
+                'address': user_data[5],
+                'mypay_balance': user_data[6],
+                'bank_name': worker_data[0],
+                'acc_number': worker_data[1],
+                'npwp': worker_data[2],
+                'rate': worker_data[4],
+                'completed_orders_count': worker_data[5],
+                'job_categories': ['Job Category 1', 'Job Category 2'],  # Replace with actual job categories if needed
+            },
+            'role': request.session.get('role', 'worker'),
+            'name': request.session.get('user_name'),
+        }
+
+        return render(request, 'profile_worker.html', context)
+    else:
+        # If no data is found, redirect to the login page
+        return redirect('yellow:iflogin')
+    
+def update_worker_profile(request):
+    if request.method == 'POST':
+        user_id = request.session.get('user_id')  # Retrieve worker's ID from the session
+        mypay_balance = request.POST.get('mypay_balance')
+        rate = request.POST.get('rate')
+        completed_orders_count = request.POST.get('completed_orders_count')
+        job_categories = request.POST.get('job_categories')
+
+        # Update the worker's information in the database
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE "USER"
+                SET MyPayBalance = %s
+                WHERE id = %s
+            """, [mypay_balance, user_id])
+
+            cursor.execute("""
+                UPDATE "worker"
+                SET rate = %s, totalfinishorder = %s
+                WHERE id = %s
+            """, [rate, completed_orders_count, user_id])
+
+        # Handle updating job categories here (if stored in a separate table)
+
+        return redirect('yellow:worker_profile')  # Redirect back to the profile page
+
+    return redirect('yellow:worker_profile')  # Redirect if method is not POST
