@@ -347,10 +347,29 @@
                 <form method="POST" action="{% url 'red:mypay' %}">
                     {% csrf_token %}
                     <input type="hidden" name="transaction_category" value="Withdrawal">
+                    
+                    <div class="form-row">
+                        <label for="bank_name">Bank Name:</label>
+                        <select id="bank_name" name="bank_name" class="dropdown" required style="width: 200px;">
+                            <option value="">Select Bank</option>
+                            <option value="GoPay">GoPay</option>
+                            <option value="OVO">OVO</option>
+                            <option value="Virtual Account BCA">Virtual Account BCA</option>
+                            <option value="BNI">BNI</option>
+                            <option value="Mandiri">Mandiri</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="bank_account_number">Bank Account Number:</label>
+                        <input type="text" id="bank_account_number" name="bank_account_number" placeholder="Enter bank account number" required style="width: 200px;" pattern="\d{10,20}" title="Please enter a valid bank account number (10-20 digits).">
+                    </div>
+                    
                     <div class="form-row">
                         <label for="withdrawal_amount">Amount:</label>
                         <input type="number" id="withdrawal_amount" name="withdrawal_amount" placeholder="Enter amount" required min="1" style="width: 200px;">
                     </div>
+                    
                     <div class="submit-btn">
                         <button type="submit">Withdraw</button>
                     </div>

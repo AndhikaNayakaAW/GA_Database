@@ -6,6 +6,8 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 import json
 
+from decimal import Decimal
+
 def order_status(request):
     """
     Redirects users to the appropriate page based on their role.
@@ -31,8 +33,6 @@ def order_status(request):
 
     return render(request, 'access_denied.html', status=403)
 
-
-from decimal import Decimal
 
 def mypay(request):
     """
@@ -159,10 +159,22 @@ def mypay(request):
 
                 elif transaction_category == 'Withdrawal':
                     withdrawal_amount = Decimal(request.POST.get('withdrawal_amount', '0'))
+                    bank_name = request.POST.get('bank_name')
+                    bank_account_number = request.POST.get('bank_account_number')
+
+                    # Validate withdrawal amount
                     if withdrawal_amount <= 0:
                         raise Exception("Invalid withdrawal amount")
                     if balance < withdrawal_amount:
                         raise Exception("Insufficient balance for withdrawal")
+
+                    # Validate bank details
+                    if not bank_name:
+                        raise Exception("Bank name is required for withdrawal")
+                    if not bank_account_number:
+                        raise Exception("Bank account number is required for withdrawal")
+                    if not bank_account_number.isdigit() or not (10 <= len(bank_account_number) <= 20):
+                        raise Exception("Invalid bank account number format")
 
                     # Deduct balance
                     new_balance = balance - withdrawal_amount
@@ -170,10 +182,10 @@ def mypay(request):
 
                     # Insert TR_MYPAY (Withdrawal)
                     cursor.execute("""
-                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId, Details)
                         VALUES (%s, %s, CURRENT_DATE, %s,
-                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Withdrawal'))
-                    """, [uuid4(), user_id, -withdrawal_amount])
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Withdrawal'), %s)
+                    """, [uuid4(), user_id, -withdrawal_amount, f"Bank: {bank_name}, Account: {bank_account_number}"])
 
                 else:
                     raise Exception("Invalid transaction type")
@@ -256,6 +268,7 @@ def mypay(request):
     context['service_sessions'] = service_sessions_list
 
     return render(request, 'mypay.html', context)
+
 
 def service_job_status(request):
     """
