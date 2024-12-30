@@ -1,5 +1,3 @@
-# red/views.py
-
 from django.shortcuts import render, redirect
 from django.db import connection, transaction
 from django.http import JsonResponse
@@ -8,6 +6,10 @@ from datetime import datetime, timedelta
 import json
 
 from decimal import Decimal
+import logging
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 def get_order_status_id(status_name, cursor):
     """
@@ -37,6 +39,10 @@ def mypay(request):
     Handles displaying MyPay balance, transaction history, and processing transactions.
     """
     user_id = request.session.get('user_id')
+
+    if not user_id:
+        # User is not authenticated; redirect to login
+        return redirect('login')  # Ensure 'login' URL exists
 
     if request.method == 'POST':
         # Handle transaction processing
@@ -188,12 +194,12 @@ def mypay(request):
                     new_balance = balance - withdrawal_amount
                     cursor.execute('UPDATE "USER" SET MyPayBalance = %s WHERE Id = %s', [new_balance, user_id])
 
-                    # Insert TR_MYPAY (Withdrawal)
+                    # Insert TR_MYPAY (Withdrawal) without 'Details' column
                     cursor.execute("""
-                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId, Details)
+                        INSERT INTO TR_MYPAY (Id, UserId, Date, Nominal, CategoryId)
                         VALUES (%s, %s, CURRENT_DATE, %s,
-                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Withdrawal'), %s)
-                    """, [uuid4(), user_id, -withdrawal_amount, f"Bank: {bank_name}, Account: {bank_account_number}"])
+                            (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Withdrawal'))
+                    """, [uuid4(), user_id, -withdrawal_amount])
 
                 else:
                     raise Exception("Invalid transaction type")
@@ -202,6 +208,8 @@ def mypay(request):
             return redirect('red:mypay')
 
         except Exception as e:
+            # Log the error for debugging
+            logger.error(f"Withdrawal Error for user {user_id}: {str(e)}")
             # On error, capture the error message
             error = str(e)
 
@@ -223,6 +231,7 @@ def mypay(request):
             """, [user_id])
             transactions = cursor.fetchall()
     except Exception as e:
+        logger.error(f"Error fetching MyPay data for user {user_id}: {str(e)}")
         return render(request, 'mypay.html', {
             'error': f"Error fetching data: {str(e)}",
             'phone_number': request.session.get('user_phone'),
@@ -271,6 +280,7 @@ def mypay(request):
             """, [user_id])
             service_sessions = cursor.fetchall()
     except Exception as e:
+        logger.error(f"Error fetching service sessions for user {user_id}: {str(e)}")
         service_sessions = []
 
     service_sessions_list = []
@@ -419,6 +429,7 @@ def update_service_status(request):
         return JsonResponse({'success': True})
 
     except Exception as e:
+        logger.error(f"Update Service Status Error: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
 
 
@@ -516,6 +527,9 @@ def accept_order(request):
             raise Exception("Order ID not provided")
 
         user_id = request.session.get('user_id')
+        if not user_id:
+            raise Exception("User not authenticated")
+
         job_date = datetime.now().date()
         job_duration = job_date + timedelta(days=1)  # 1 session = 1 day as stated
 
@@ -548,4 +562,5 @@ def accept_order(request):
         return JsonResponse({'success': True})
 
     except Exception as e:
+        logger.error(f"Accept Order Error: {str(e)}")
         return JsonResponse({'error': str(e)}, status=400)
