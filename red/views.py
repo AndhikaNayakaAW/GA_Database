@@ -1,4 +1,5 @@
 # red/views.py
+
 from django.shortcuts import render, redirect
 from django.db import connection, transaction
 from django.http import JsonResponse
@@ -8,39 +9,33 @@ import json
 
 from decimal import Decimal
 
+def get_order_status_id(status_name, cursor):
+    """
+    Helper function to fetch the ID of a given status name.
+    """
+    cursor.execute("""
+        SELECT Id FROM ORDER_STATUS WHERE Status = %s
+    """, [status_name])
+    row = cursor.fetchone()
+    if not row:
+        raise Exception(f"Status '{status_name}' does not exist in ORDER_STATUS")
+    return row[0]
+
+
 def order_status(request):
     """
-    Redirects users to the appropriate page based on their role.
+    Redirects users to the 'mypay' page.
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
     user_id = request.session.get('user_id')
 
-    # Check user role in the database
-    with connection.cursor() as cursor:
-        cursor.execute('SELECT 1 FROM Worker WHERE Id = %s', [user_id])
-        isWorker = cursor.fetchone()
-
-    with connection.cursor() as cursor:
-        cursor.execute('SELECT 1 FROM "USER" WHERE Id = %s', [user_id])
-        isUser = cursor.fetchone()
-
-    if isWorker:
-        return redirect('red:service_job_status')
-    elif isUser:
-        return redirect('red:mypay')
-
-    return render(request, 'access_denied.html', status=403)
+    # Always redirect to 'mypay' page
+    return redirect('red:mypay')
 
 
 def mypay(request):
     """
     Handles displaying MyPay balance, transaction history, and processing transactions.
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
     user_id = request.session.get('user_id')
 
     if request.method == 'POST':
@@ -79,17 +74,30 @@ def mypay(request):
                     if not order_id:
                         raise Exception("Order ID not provided")
 
-                    # Fetch order price from TR_SERVICE_ORDER joined with SERVICE_SESSION
+                    # Fetch order price and verify status via TR_ORDER_STATUS
                     cursor.execute("""
-                        SELECT o.Id, ss.Price
+                        SELECT o.Id, ss.Price, os.Status
                         FROM TR_SERVICE_ORDER o
                         JOIN SERVICE_SESSION ss ON (o.subcategoryId = ss.SubcategoryId AND o.Session = ss.Session)
-                        WHERE o.Id = %s AND o.customerId = %s AND o.Status = 'Waiting for Payment'
+                        LEFT JOIN (
+                            SELECT tos.serviceTrId, os.Status
+                            FROM TR_ORDER_STATUS tos
+                            JOIN ORDER_STATUS os ON tos.statusId = os.Id
+                            WHERE (tos.serviceTrId, tos.date) IN (
+                                SELECT serviceTrId, MAX(date)
+                                FROM TR_ORDER_STATUS
+                                GROUP BY serviceTrId
+                            )
+                        ) os ON o.Id = os.serviceTrId
+                        WHERE o.Id = %s AND o.customerId = %s
                     """, [order_id, user_id])
                     order = cursor.fetchone()
                     if not order:
-                        raise Exception("Order not found or not in payable state")
-                    service_price = Decimal(order[1])
+                        raise Exception("Order not found")
+                    _, service_price, current_status = order
+
+                    if current_status != 'Waiting for Payment':
+                        raise Exception("Order is not in a payable state")
 
                     if balance < service_price:
                         raise Exception("Insufficient balance for service payment")
@@ -105,12 +113,12 @@ def mypay(request):
                             (SELECT Id FROM TR_MYPAY_CATEGORY WHERE Name = 'Payment'))
                     """, [uuid4(), user_id, -service_price])
 
-                    # Update order status to 'Payment Confirmed'
+                    # Insert new status 'Payment Confirmed' into TR_ORDER_STATUS
+                    payment_confirmed_status_id = get_order_status_id('Payment Confirmed', cursor)
                     cursor.execute("""
-                        UPDATE TR_SERVICE_ORDER
-                        SET Status = 'Payment Confirmed'
-                        WHERE Id = %s AND customerId = %s
-                    """, [order_id, user_id])
+                        INSERT INTO TR_ORDER_STATUS (serviceTrId, statusId, date)
+                        VALUES (%s, %s, CURRENT_TIMESTAMP)
+                    """, [order_id, payment_confirmed_status_id])
 
                 elif transaction_category == 'Transfer':
                     recipient_phone = request.POST.get('recipient_phone')
@@ -250,7 +258,16 @@ def mypay(request):
                 FROM TR_SERVICE_ORDER o
                 JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
                 JOIN SERVICE_SESSION ss ON (o.subcategoryId = ss.SubcategoryId AND o.Session = ss.Session)
-                WHERE o.customerId = %s AND o.Status = 'Waiting for Payment'
+                WHERE o.customerId = %s
+                AND o.workerId IS NOT NULL
+                AND (
+                    SELECT os.Status
+                    FROM TR_ORDER_STATUS tos
+                    JOIN ORDER_STATUS os ON tos.statusId = os.Id
+                    WHERE tos.serviceTrId = o.Id
+                    ORDER BY tos.date DESC
+                    LIMIT 1
+                ) = 'Payment Confirmed'
             """, [user_id])
             service_sessions = cursor.fetchall()
     except Exception as e:
@@ -274,27 +291,56 @@ def service_job_status(request):
     """
     Displays the service orders assigned to the worker and allows updating their status.
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
-    if request.session.get('user_role') != 'Worker':
-        return render(request, 'access_denied.html', status=403)
-
     user_id = request.session.get('user_id')
 
-    # Fetch service orders assigned to the worker
-    # Join with SERVICE_SUBCATEGORY to get subcategory name
-    # Join with CUSTOMER and USER to get customer's name
+    if not user_id:
+        # Redirect to login or show an error
+        return redirect('login')  # Replace 'login' with your actual login URL name
+
+    # Retrieve query parameters for filtering
+    service_name = request.GET.get('service_name', '')
+    service_status = request.GET.get('service_status', '')
+
+    # Fetch service orders assigned to the worker with optional filtering
     with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT o.Id, ssc.SubcategoryName, o.orderDate, o.serviceDate, o.Session, o.TotalPrice, o.Status, u.Name
+        query = """
+            WITH latest_status AS (
+                SELECT 
+                    tos.serviceTrId,
+                    os.Status,
+                    ROW_NUMBER() OVER (PARTITION BY tos.serviceTrId ORDER BY tos.date DESC) as rn
+                FROM TR_ORDER_STATUS tos
+                JOIN ORDER_STATUS os ON tos.statusId = os.Id
+            )
+            SELECT 
+                o.Id, 
+                ssc.SubcategoryName, 
+                o.orderDate, 
+                o.serviceDate, 
+                o.Session, 
+                o.TotalPrice, 
+                ls.Status, 
+                u.Name
             FROM TR_SERVICE_ORDER o
             JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
             JOIN CUSTOMER c ON o.customerId = c.Id
             JOIN "USER" u ON c.Id = u.Id
+            LEFT JOIN latest_status ls ON o.Id = ls.serviceTrId AND ls.rn = 1
             WHERE o.workerId = %s
-            ORDER BY o.orderDate DESC
-        """, [user_id])
+        """
+        params = [user_id]
+
+        if service_name:
+            query += " AND ssc.SubcategoryName ILIKE %s"
+            params.append(f"%{service_name}%")
+
+        if service_status:
+            query += " AND ls.Status = %s"
+            params.append(service_status)
+
+        query += " ORDER BY o.orderDate DESC"
+
+        cursor.execute(query, params)
         service_orders = cursor.fetchall()
 
     order_list = []
@@ -307,7 +353,7 @@ def service_job_status(request):
             'working_date': sdate,
             'session': sess,
             'total_amount': float(tprice),
-            'status': stat,
+            'status': stat if stat else 'No Status',
             'user_name': uname,
         })
 
@@ -318,14 +364,8 @@ def update_service_status(request):
     """
     Handles AJAX requests to update the status of a service order.
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=400)
-
-    if request.session.get('user_role') != 'Worker':
-        return JsonResponse({'error': 'Access Denied'}, status=403)
 
     try:
         data = json.loads(request.body)
@@ -335,6 +375,7 @@ def update_service_status(request):
         if not order_id or not new_status:
             raise Exception("Missing order_id or new_status")
 
+        # Define valid transitions
         valid_transitions = {
             'Waiting for Worker to Depart': 'Worker Arrived at Location',
             'Worker Arrived at Location': 'Service in Progress',
@@ -342,24 +383,38 @@ def update_service_status(request):
         }
 
         with connection.cursor() as cursor:
+            # Fetch the latest status of the order
             cursor.execute("""
-                SELECT Status FROM TR_SERVICE_ORDER
-                WHERE Id = %s AND workerId = %s
-            """, [order_id, request.session.get('user_id')])
+                SELECT os.Status
+                FROM TR_ORDER_STATUS tos
+                JOIN ORDER_STATUS os ON tos.statusId = os.Id
+                WHERE tos.serviceTrId = %s
+                ORDER BY tos.date DESC
+                LIMIT 1
+            """, [order_id])
             row = cursor.fetchone()
             if not row:
-                raise Exception("Service order not found or access denied")
+                raise Exception("Service order has no status history")
             current_status = row[0]
 
             expected_new_status = valid_transitions.get(current_status)
             if expected_new_status != new_status:
                 raise Exception("Invalid status transition")
 
+            # Fetch the status ID for the new status
             cursor.execute("""
-                UPDATE TR_SERVICE_ORDER
-                SET Status = %s
-                WHERE Id = %s AND workerId = %s
-            """, [new_status, order_id, request.session.get('user_id')])
+                SELECT Id FROM ORDER_STATUS WHERE Status = %s
+            """, [new_status])
+            status_row = cursor.fetchone()
+            if not status_row:
+                raise Exception("New status does not exist in ORDER_STATUS")
+            new_status_id = status_row[0]
+
+            # Insert new status into TR_ORDER_STATUS
+            cursor.execute("""
+                INSERT INTO TR_ORDER_STATUS (serviceTrId, statusId, date)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+            """, [order_id, new_status_id])
 
         return JsonResponse({'success': True})
 
@@ -372,18 +427,12 @@ def service_job1(request):
     Handles the service job filtering form (State 1).
     Just a form page; no queries.
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
-    if request.session.get('user_role') != 'Worker':
-        return render(request, 'access_denied.html', status=403)
-
     if request.method == 'POST':
         # category and subcategory selected by the user
         category = request.POST.get('category')
         subcategory = request.POST.get('subcategory')
         # Redirect with GET params
-        return redirect(f"{'/service_job2/'}?category={category}&subcategory={subcategory}")
+        return redirect(f"/red/service_job2/?category={category}&subcategory={subcategory}")
 
     return render(request, 'service_job1.html')
 
@@ -392,12 +441,6 @@ def service_job2(request):
     """
     Displays filtered service jobs based on selected category and subcategory (State 2).
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
-    if request.session.get('user_role') != 'Worker':
-        return render(request, 'access_denied.html', status=403)
-
     category = request.GET.get('category', '')
     subcategory = request.GET.get('subcategory', '')
 
@@ -405,12 +448,29 @@ def service_job2(request):
     # Join SERVICE_SUBCATEGORY to get subcategory name, SERVICE_CATEGORY to get category
     with connection.cursor() as cursor:
         query = """
-            SELECT o.Id, ssc.SubcategoryName, o.orderDate, o.serviceDate, o.Session, o.TotalPrice, o.Status, u.Name
+            WITH latest_status AS (
+                SELECT 
+                    tos.serviceTrId,
+                    os.Status,
+                    ROW_NUMBER() OVER (PARTITION BY tos.serviceTrId ORDER BY tos.date DESC) as rn
+                FROM TR_ORDER_STATUS tos
+                JOIN ORDER_STATUS os ON tos.statusId = os.Id
+            )
+            SELECT 
+                o.Id, 
+                ssc.SubcategoryName, 
+                o.orderDate, 
+                o.serviceDate, 
+                o.Session, 
+                o.TotalPrice, 
+                ls.Status, 
+                u.Name
             FROM TR_SERVICE_ORDER o
             JOIN SERVICE_SUBCATEGORY ssc ON o.subcategoryId = ssc.Id
             JOIN CUSTOMER c ON o.customerId = c.Id
             JOIN "USER" u ON c.Id = u.Id
             JOIN SERVICE_CATEGORY sc ON ssc.ServiceCategoryId = sc.Id
+            LEFT JOIN latest_status ls ON o.Id = ls.serviceTrId AND ls.rn = 1
             WHERE o.workerId IS NULL
         """
         params = []
@@ -419,7 +479,7 @@ def service_job2(request):
             params.append(category.replace('_', ' ').title())  # Adjust naming if needed
         if subcategory:
             query += " AND ssc.SubcategoryName ILIKE %s"
-            params.append('%' + subcategory.replace('_', ' ') + '%')
+            params.append(f"%{subcategory.replace('_', ' ')}%")
 
         query += " ORDER BY o.orderDate DESC"
         cursor.execute(query, params)
@@ -435,7 +495,7 @@ def service_job2(request):
             'working_date': sdate,
             'session': sess,
             'total_amount': float(tprice),
-            'status': stat,
+            'status': stat if stat else 'No Status',
             'user_name': uname,
         })
 
@@ -446,14 +506,8 @@ def accept_order(request):
     """
     Handles AJAX requests to accept a service order.
     """
-    if not request.session.get('is_authenticated'):
-        return redirect('/')  # Redirect to login page
-
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid request method'}, status=400)
-
-    if request.session.get('user_role') != 'Worker':
-        return JsonResponse({'error': 'Access Denied'}, status=403)
 
     try:
         data = json.loads(request.body)
@@ -465,17 +519,31 @@ def accept_order(request):
         job_date = datetime.now().date()
         job_duration = job_date + timedelta(days=1)  # 1 session = 1 day as stated
 
-        with connection.cursor() as cursor:
+        with connection.cursor() as cursor, transaction.atomic():
+            # Assign worker and set initial status
             cursor.execute("""
                 UPDATE TR_SERVICE_ORDER
-                SET workerId = %s, Status = 'Waiting for Worker to Depart',
-                    serviceDate = %s, 
-                    serviceTime = CURRENT_TIMESTAMP
+                SET workerId = %s, serviceDate = %s, serviceTime = CURRENT_TIMESTAMP
                 WHERE Id = %s AND workerId IS NULL
             """, [user_id, job_date, order_id])
 
             if cursor.rowcount == 0:
                 raise Exception("Order not found or already taken")
+
+            # Fetch the 'Waiting for Worker to Depart' status ID
+            cursor.execute("""
+                SELECT Id FROM ORDER_STATUS WHERE Status = 'Waiting for Worker to Depart'
+            """)
+            status_row = cursor.fetchone()
+            if not status_row:
+                raise Exception("Initial status 'Waiting for Worker to Depart' not found in ORDER_STATUS")
+            initial_status_id = status_row[0]
+
+            # Insert initial status into TR_ORDER_STATUS
+            cursor.execute("""
+                INSERT INTO TR_ORDER_STATUS (serviceTrId, statusId, date)
+                VALUES (%s, %s, CURRENT_TIMESTAMP)
+            """, [order_id, initial_status_id])
 
         return JsonResponse({'success': True})
 

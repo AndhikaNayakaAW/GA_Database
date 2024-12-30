@@ -1,4 +1,5 @@
 <!-- red/templates/service_job_status.html -->
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -110,6 +111,9 @@
         <button onclick="search()">Search</button>
     </div>
 
+    <!-- Test intcomma -->
+    <p>Test intcomma: {{ 1234567|intcomma }}</p>
+
     <!-- Service Items -->
     {% if service_orders %}
         {% for order in service_orders %}
@@ -129,7 +133,8 @@
                 </div>
                 <div>
                     <strong>Total Amount</strong>
-                    <p>Rp {{ order.total_amount|floatformat:2|intcomma }}</p>
+                    <!-- Swap the order of filters -->
+                    <p>Rp {{ order.total_amount|intcomma|floatformat:2 }}</p>
                 </div>
             </div>
             <div class="status-update">
@@ -153,13 +158,12 @@
     function search() {
         const serviceName = document.getElementById('service-name').value;
         const serviceStatus = document.getElementById('service-status').value;
-        // Implement search functionality, possibly via AJAX or by redirecting with query parameters
-        // For demonstration, we'll redirect with query parameters
+        // Redirect with query parameters for filtering
         const queryParams = new URLSearchParams({
             service_name: serviceName,
             service_status: serviceStatus
         }).toString();
-        window.location.href = `/service_job_status/?${queryParams}`;
+        window.location.href = `/red/service_job_status/?${queryParams}`;
     }
 
     function updateStatus(orderId, newStatus) {
@@ -167,7 +171,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}',  // Include CSRF token for POST
+                'X-CSRFToken': '{{ csrf_token }}',  // Ensure CSRF token is included
             },
             body: JSON.stringify({
                 'order_id': orderId,

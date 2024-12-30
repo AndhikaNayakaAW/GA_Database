@@ -7,8 +7,6 @@ app_name = 'red'
 urlpatterns = [
     path('', views.order_status, name='order_status'),
     path('mypay/', views.mypay, name='mypay'),
-    # Removed the separate mypay_transaction path
-    # path('mypay/transaction/', views.mypay_transaction, name='mypay_transaction'),
     path('service_job_status/', views.service_job_status, name='service_job_status'),
     path('service_job1/', views.service_job1, name='service_job1'),
     path('service_job2/', views.service_job2, name='service_job2'),

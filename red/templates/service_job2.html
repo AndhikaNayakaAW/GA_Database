@@ -1,4 +1,5 @@
 <!-- red/templates/service_job2.html -->
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -119,6 +120,9 @@
         <button onclick="search()">Search</button>
     </div>
 
+    <!-- Test intcomma Filter -->
+    <p>Test intcomma: {{ 1234567|intcomma }}</p>
+
     <!-- Order List Section -->
     {% if service_orders %}
         {% for order in service_orders %}
@@ -134,7 +138,7 @@
                     <div>Session: {{ order.session }}</div>
                 </div>
                 <div class="order-info">
-                    <div>Total Amount: Rp {{ order.total_amount|floatformat:2|intcomma }}</div>
+                    <div>Total Amount: Rp {{ order.total_amount|intcomma|floatformat:2 }}</div>
                 </div>
             </div>
             <div>
@@ -174,12 +178,12 @@
     function search() {
         const category = document.getElementById('category').value;
         const subcategory = document.getElementById('subcategory').value;
-        // Redirect to service_job2 with query parameters
+        // Redirect to service_job2 with query parameters using Django's URL template tag
         const queryParams = new URLSearchParams({
             category: category,
             subcategory: subcategory
         }).toString();
-        window.location.href = `/service_job2/?${queryParams}`;
+        window.location.href = `{% url 'red:service_job2' %}/?${queryParams}`;
     }
 
     function acceptOrder(orderId) {
